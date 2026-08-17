@@ -1,0 +1,118 @@
+.pd-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.pd-main-img {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #d9e2df;
+}
+
+.pd-main-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pd-thumbs {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.pd-thumbs button {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid transparent;
+  opacity: 0.75;
+}
+
+.pd-thumbs button.active,
+.pd-thumbs button:hover {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.pd-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pd-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 0.85rem;
+}
+
+.pd-price {
+  margin-bottom: 1rem;
+}
+
+.pd-price .price-current {
+  font-size: 1.5rem;
+}
+
+.pd-desc {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  max-width: 48ch;
+}
+
+.pd-option {
+  margin-bottom: 1.25rem;
+}
+
+.pd-option > label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-bottom: 0.55rem;
+}
+
+.pd-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.pd-features {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.pd-features li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.pd-features li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .pd-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
