@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 const orderItemSchema=new mongoose.Schema({
     
         productId: {
-          type: Number,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
           required: true,
         },
         name: {
@@ -109,6 +110,23 @@ const orderSchema=new mongoose.Schema({
       default: "PENDING",
     },
 
+    razorpayOrderId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+
+    razorpayPaymentId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+
+    razorpaySignature: {
+      type: String,
+      select: false,
+    },
+
     orderStatus: {
       type: String,
       enum: [
@@ -121,6 +139,36 @@ const orderSchema=new mongoose.Schema({
         "CANCELLED",
       ],
       default: "PLACED",
+    },
+
+    shiprocketOrderId: {
+      type: String,
+      sparse: true,
+    },
+
+    shiprocketShipmentId: {
+      type: String,
+      sparse: true,
+    },
+
+    awbCode: {
+      type: String,
+      default: "",
+    },
+
+    courierName: {
+      type: String,
+      default: "",
+    },
+
+    trackingUrl: {
+      type: String,
+      default: "",
+    },
+
+    shipmentStatus: {
+      type: String,
+      default: "",
     },
  
 }, {timestamps:true});

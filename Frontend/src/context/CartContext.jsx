@@ -74,7 +74,7 @@ try{
     const {data}=await axiosInstance.post("/cart/add",payload);
     setItems(normalizeCart(data));
     setToast(data.message || "Item added to cart successfully");
-  }catch(e){
+  }catch(error){
     console.error("Add to cart error:", error);
 
     setToast(
@@ -97,8 +97,8 @@ try{
     const {data}=await axiosInstance.put(`/cart/update-quantity/${userId}/${productId}`,{quantity,size:options.size || "",color:options.color || ""});
     setItems(normalizeCart(data));
     setToast(data.message || "Quantity updated successfully");
-  }catch(e){
-    console.error("Update quantity error:", e);
+  }catch(error){
+    console.error("Update quantity error:", error);
     setToast(
       error.response?.data?.message ||
       "Failed to update quantity"
@@ -118,7 +118,7 @@ try{
     setItems(normalizeCart(data));
     setToast(data.message || "Item removed from cart successfully");
 
-  }catch(e){
+  }catch(error){
     console.error("Remove item error:", error);
     setToast(
       error.response?.data?.message ||
@@ -135,8 +135,8 @@ try{
       const {data}=await axiosInstance.delete(`/cart/clear/${userId}`);
       setItems(normalizeCart(data));
       setToast(data.message || "Cart cleared successfully");
-    }catch(e){
-      console.error("Clear cart error:", e);
+    }catch(error){
+      console.error("Clear cart error:", error);
       setToast(
         error.response?.data?.message ||
         "Failed to clear cart"

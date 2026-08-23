@@ -1,13 +1,40 @@
 import "./Home.css";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Leaf, RefreshCw, Truck } from "lucide-react";
 import ProductCard from "../components/product/ProductCard";
-import { categories, products } from "../data/products";
-
-const featured = products.filter((p) => p.isNew || p.onSale).slice(0, 4);
-const bestsellers = products.slice(0, 8);
+import { api } from "../services/api";
 
 export default function Home() {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    api
+      .getProducts()
+      .then((items) => {
+        setProducts(items);
+        setCategories(
+          [...new Set(items.map((product) => product.category).filter(Boolean))]
+            .sort()
+            .map((name) => ({
+              id: name.toLowerCase(),
+              name,
+              image: items.find((product) => product.category === name)?.image,
+            })),
+        );
+      })
+      .catch(() => {
+        setProducts([]);
+        setCategories([]);
+      });
+  }, []);
+
+  const featured = useMemo(
+    () => products.filter((product) => product.isNew || product.onSale).slice(0, 4),
+    [products],
+  );
+  const bestsellers = useMemo(() => products.slice(0, 8), [products]);
   return (
     <div className="home">
       <section className="hero">
@@ -57,7 +84,7 @@ export default function Home() {
               <img src={cat.image} alt={cat.name} loading="lazy" />
               <div className="cat-card-copy">
                 <h3>{cat.name}</h3>
-                <p>{cat.description}</p>
+                <p>Explore our {cat.name.toLowerCase()} collection.</p>
               </div>
             </Link>
           ))}

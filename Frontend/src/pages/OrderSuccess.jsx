@@ -13,17 +13,17 @@ export default function OrderSuccess() {
         <h3>Order confirmed</h3>
         <p>
           {order
-            ? `Thank you! Your order ${order.id} is confirmed.`
+            ? `Thank you! Your order ${order.id || order._id} is confirmed.`
             : "Thank you for your purchase."}
         </p>
         {order ? (
           <p style={{ marginTop: "-0.75rem" }}>
-            Total paid: <strong>{formatPrice(order.total)}</strong>
+            Total: <strong>{formatPrice(order.total || order.totalAmount)}</strong>
           </p>
         ) : null}
         <div style={{ display: "flex", gap: "0.65rem", justifyContent: "center", flexWrap: "wrap" }}>
           <Link to="/shop" className="btn btn-primary">Continue shopping</Link>
-          <Link to="/account" className="btn btn-outline">View account</Link>
+          <Link to="/account#orders" className="btn btn-outline">View your orders</Link>
         </div>
       </div>
     </div>

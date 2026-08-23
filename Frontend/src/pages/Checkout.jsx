@@ -14,12 +14,18 @@ const initial = {
   state: "",
   zip: "",
   country: "India",
-  payment: "card",
-  cardName: "",
-  cardNumber: "",
-  expiry: "",
-  cvc: "",
+  payment: "online",
 };
+
+const loadRazorpay = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Unable to load Razorpay Checkout"));
+    document.body.appendChild(script);
+  });
 
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart();
@@ -32,6 +38,7 @@ export default function Checkout() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [shippingNote, setShippingNote] = useState("");
 
   const shipping = subtotal >= 999 || subtotal === 0 ? 0 : 79;
   const total = subtotal + shipping;
@@ -51,6 +58,26 @@ export default function Checkout() {
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "zip") setShippingNote("");
+  };
+
+  const checkPincode = async () => {
+    const pincode = String(form.zip || "").trim();
+    if (!/^\d{6}$/.test(pincode)) return;
+    try {
+      const result = await api.checkServiceability(pincode, {
+        weight: Math.max(0.5, items.reduce((n, i) => n + i.quantity * 0.4, 0)),
+        cod: form.payment === "cod" ? total : 0,
+      });
+      if (result.serviceable) {
+        const days = result.estimatedDays ? ` · ETA ${result.estimatedDays}` : "";
+        setShippingNote(`Deliverable to ${pincode}${days}`);
+      } else {
+        setShippingNote(result.message || "This pincode may not be serviceable yet.");
+      }
+    } catch {
+      setShippingNote("");
+    }
   };
 
   const onSubmit = async (e) => {
@@ -58,25 +85,63 @@ export default function Checkout() {
     setError("");
     setSubmitting(true);
     try {
-      const order = await api.placeOrder({
-        customer: {
-          email: form.email,
+      if (!isAuthenticated) {
+        navigate("/login", { state: { from: "/checkout" } });
+        return;
+      }
+      const orderPayload = {
+        shippingAddress: {
           fullName: form.fullName,
           phone: form.phone,
-        },
-        shippingAddress: {
           address: form.address,
           city: form.city,
           state: form.state,
-          zip: form.zip,
-          country: form.country,
+          pincode: form.zip,
         },
-        paymentMethod: form.payment,
-        items,
-        subtotal,
-        shipping,
-        total,
+        items: items.map(({ productId, quantity, size, color }) => ({
+          productId,
+          quantity,
+          size,
+          color,
+        })),
+      };
+
+      if (form.payment === "cod") {
+        const result = await api.placeOrder(orderPayload);
+        const order = result.order || result;
+        await clearCart();
+        navigate("/order-success", { state: { order } });
+        return;
+      }
+
+      await loadRazorpay();
+      const paymentOrder = await api.initiatePayment(orderPayload);
+      const paymentResponse = await new Promise((resolve, reject) => {
+        const checkout = new window.Razorpay({
+          key: paymentOrder.keyId,
+          amount: paymentOrder.gatewayOrder.amount,
+          currency: paymentOrder.gatewayOrder.currency,
+          name: "VORA",
+          description: "Store purchase",
+          order_id: paymentOrder.gatewayOrder.id,
+          prefill: {
+            name: form.fullName,
+            email: form.email,
+            contact: form.phone,
+          },
+          theme: { color: "#0f6b5c" },
+          handler: resolve,
+          modal: {
+            ondismiss: () => reject(new Error("Payment was cancelled")),
+          },
+        });
+        checkout.on("payment.failed", (response) =>
+          reject(new Error(response.error?.description || "Payment failed")),
+        );
+        checkout.open();
       });
+      const verification = await api.verifyPayment(paymentResponse);
+      const order = verification.order;
       await clearCart();
       navigate("/order-success", { state: { order } });
     } catch (err) {
@@ -129,8 +194,20 @@ export default function Checkout() {
           </div>
           <div className="checkout-row">
             <div className="field">
-              <label htmlFor="zip">ZIP</label>
-              <input id="zip" name="zip" required value={form.zip} onChange={onChange} />
+              <label htmlFor="zip">PIN code</label>
+              <input
+                id="zip"
+                name="zip"
+                required
+                inputMode="numeric"
+                pattern="\d{6}"
+                value={form.zip}
+                onChange={onChange}
+                onBlur={checkPincode}
+              />
+              {shippingNote ? (
+                <small style={{ color: "var(--muted)" }}>{shippingNote}</small>
+              ) : null}
             </div>
             <div className="field">
               <label htmlFor="country">Country</label>
@@ -140,46 +217,22 @@ export default function Checkout() {
 
           <h3 style={{ marginTop: "1.25rem" }}>Payment</h3>
           <div className="choice-row" style={{ marginBottom: "1rem" }}>
-            {["card", "cod"].map((method) => (
+            {["online", "cod"].map((method) => (
               <button
                 key={method}
                 type="button"
                 className={`choice-chip ${form.payment === method ? "active" : ""}`}
                 onClick={() => setForm((p) => ({ ...p, payment: method }))}
               >
-                {method === "card" ? "Card" : "Cash on delivery"}
+                {method === "online" ? "Pay online" : "Cash on delivery"}
               </button>
             ))}
           </div>
 
-          {form.payment === "card" ? (
-            <>
-              <div className="field">
-                <label htmlFor="cardName">Name on card</label>
-                <input id="cardName" name="cardName" required value={form.cardName} onChange={onChange} />
-              </div>
-              <div className="field">
-                <label htmlFor="cardNumber">Card number</label>
-                <input
-                  id="cardNumber"
-                  name="cardNumber"
-                  required
-                  placeholder="4242 4242 4242 4242"
-                  value={form.cardNumber}
-                  onChange={onChange}
-                />
-              </div>
-              <div className="checkout-row">
-                <div className="field">
-                  <label htmlFor="expiry">Expiry</label>
-                  <input id="expiry" name="expiry" required placeholder="MM/YY" value={form.expiry} onChange={onChange} />
-                </div>
-                <div className="field">
-                  <label htmlFor="cvc">CVC</label>
-                  <input id="cvc" name="cvc" required placeholder="123" value={form.cvc} onChange={onChange} />
-                </div>
-              </div>
-            </>
+          {form.payment === "online" ? (
+            <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
+              Razorpay securely handles cards, UPI, netbanking, and wallets.
+            </p>
           ) : (
             <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
               Pay with cash when your order arrives.
@@ -188,7 +241,11 @@ export default function Checkout() {
 
           {error ? <p className="field-error">{error}</p> : null}
           <button className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? "Placing order…" : `Pay ${formatPrice(total)}`}
+            {submitting
+              ? "Processing…"
+              : form.payment === "cod"
+                ? `Place order · ${formatPrice(total)}`
+                : `Pay ${formatPrice(total)}`}
           </button>
         </div>
 

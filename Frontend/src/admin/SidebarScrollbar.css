@@ -1,0 +1,24 @@
+/* Left navigation scrollbar */
+.admin-shell aside nav {
+  scrollbar-width: thin;
+  scrollbar-color: #ff8a3d #111c2e;
+}
+
+.admin-shell aside nav::-webkit-scrollbar {
+  width: 7px;
+}
+
+.admin-shell aside nav::-webkit-scrollbar-track {
+  background: #111c2e;
+  border-radius: 999px;
+}
+
+.admin-shell aside nav::-webkit-scrollbar-thumb {
+  background: #ff8a3d;
+  border: 2px solid #111c2e;
+  border-radius: 999px;
+}
+
+.admin-shell aside nav::-webkit-scrollbar-thumb:hover {
+  background: #ffad73;
+}

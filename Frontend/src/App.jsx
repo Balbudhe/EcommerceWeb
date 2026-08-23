@@ -19,7 +19,7 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import OrderSuccess from "./pages/OrderSuccess";
 import NotFound from "./pages/NotFound";
-import Admin from "./pages/Admin";
+import AdminApp from "./admin/AdminApp";
 
 export default function App() {
   return (
@@ -28,7 +28,8 @@ export default function App() {
         <CartProvider>
           <WishlistProvider>
             <Routes>
-              <Route path="admin/*" element={<Admin />} />
+              <Route path="admin/*" element={<AdminApp />} />
+              <Route path="management-panel-7x9k/*" element={<AdminApp />} />
               <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="shop" element={<Shop />} />

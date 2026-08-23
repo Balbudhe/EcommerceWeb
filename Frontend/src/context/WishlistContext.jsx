@@ -34,6 +34,10 @@ export function WishlistProvider({ children }) {
 
   useEffect(() => {
     if (booting) return;
+    if (!isAuthenticated) {
+      setIds([]);
+      return;
+    }
     refreshWishlist();
   }, [booting, isAuthenticated, refreshWishlist]);
 

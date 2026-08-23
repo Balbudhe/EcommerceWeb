@@ -1,10 +1,15 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/product/ProductCard";
 import { useWishlist } from "../context/WishlistContext";
-import { products } from "../data/products";
+import { api } from "../services/api";
 
 export default function Wishlist() {
   const { ids } = useWishlist();
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    api.getProducts().then(setProducts).catch(() => setProducts([]));
+  }, []);
   const list = products.filter((p) => ids.includes(p.id));
 
   return (

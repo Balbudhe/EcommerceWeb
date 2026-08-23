@@ -6,12 +6,12 @@ import { api } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
 import ProductCard from "../components/product/ProductCard";
-import { products as allProducts } from "../data/products";
 import { formatPrice } from "../utils/formatPrice";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
@@ -24,17 +24,28 @@ export default function ProductDetail() {
     let alive = true;
     setLoading(true);
     window.scrollTo(0, 0);
-    api.getProduct(id).then((data) => {
-      if (!alive) return;
-      setProduct(data);
-      if (data) {
-        setSize(data.sizes[0]);
-        setColor(data.colors[0]);
-        setActiveImg(0);
-        setQty(1);
-      }
-      setLoading(false);
-    });
+    Promise.all([api.getProduct(id), api.getProducts()])
+      .then(([data, products]) => {
+        if (!alive) return;
+        setProduct(data);
+        if (data) {
+          setRelated(
+            products
+              .filter((item) => item.category === data.category && item.id !== data.id)
+              .slice(0, 4),
+          );
+          setSize(data.sizes[0] || "");
+          setColor(data.colors[0] || "");
+          setActiveImg(0);
+          setQty(1);
+        }
+      })
+      .catch(() => {
+        if (alive) setProduct(null);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
     return () => {
       alive = false;
     };
@@ -56,9 +67,6 @@ export default function ProductDetail() {
     );
   }
 
-  const related = allProducts
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
   const wished = isWishlisted(product.id);
 
   return (

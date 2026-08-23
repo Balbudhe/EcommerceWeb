@@ -1,19 +1,25 @@
 import express from "express";
-import { adminLogin, createAdminProduct, createPromotion, deleteAdminProduct, deletePromotion, getDashboard, updateAdminProduct, updateOrderStatus, updatePromotion } from "../Controller/AdminController.js";
+import * as admin from "../Controller/AdminController.js";
 import { protect } from "../Middleware/authMiddleware.js";
 import { isAdmin } from "../Middleware/isAdmin.js";
 
 const router = express.Router();
-
-router.post("/login", adminLogin);
+router.post("/login", admin.login);
 router.use(protect, isAdmin);
-router.get("/dashboard", getDashboard);
-router.post("/products", createAdminProduct);
-router.patch("/products/:id", updateAdminProduct);
-router.delete("/products/:id", deleteAdminProduct);
-router.patch("/orders/:id/status", updateOrderStatus);
-router.post("/promotions", createPromotion);
-router.patch("/promotions/:id", updatePromotion);
-router.delete("/promotions/:id", deletePromotion);
-
+router.get("/me", admin.me);
+router.get("/dashboard", admin.dashboard);
+router.route("/products").get(admin.products).post(admin.addProduct);
+router.route("/products/:id").get(admin.product).patch(admin.updateProduct).delete(admin.deleteProduct);
+router.get("/orders", admin.orders);
+router.patch("/orders/:id", admin.updateOrder);
+router.post("/orders/:id/ship", admin.shipOrder);
+router.get("/users", admin.users);
+router.patch("/users/:id", admin.updateUser);
+router.route("/categories").get(admin.categories).post(admin.addCategory);
+router.patch("/categories/:id", admin.toggleCategory);
+router.route("/coupons").get(admin.coupons).post(admin.addCoupon);
+router.patch("/coupons/:id", admin.toggleCoupon);
+router.route("/sliders").get(admin.sliders).post(admin.addSlider);
+router.patch("/sliders/:id", admin.toggleSlider);
+router.route("/settings").get(admin.settings).patch(admin.settings);
 export default router;

@@ -9,7 +9,9 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use((config) => {
   const token = getAuthToken() || loadAuthSession()?.token;
-  if (token) {
+  // Admin requests provide their own token. Do not replace it with the
+  // storefront customer's token when both sessions exist in localStorage.
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

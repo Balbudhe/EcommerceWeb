@@ -3,16 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/product/ProductCard";
 import { api } from "../services/api";
-import { categories } from "../data/products";
 
 export default function Shop() {
   const [params, setParams] = useSearchParams();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const category = params.get("category") || "";
   const search = params.get("search") || "";
   const sort = params.get("sort") || "featured";
+
+  useEffect(() => {
+    api.getCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -41,7 +45,7 @@ export default function Shop() {
       return cat ? cat.name : "Shop";
     }
     return "All products";
-  }, [category, search]);
+  }, [category, search, categories]);
 
   const update = (key, value) => {
     const next = new URLSearchParams(params);

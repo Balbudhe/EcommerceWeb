@@ -3,7 +3,7 @@ import Product from "../Models/Products.js";
 
 export const createProduct=async(req,res)=>{
     try{
-        const {title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features,rating,reviews}=req.body;
+        const {title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features}=req.body;
 
         if(!title ||
             !description ||
@@ -12,19 +12,16 @@ export const createProduct=async(req,res)=>{
             !images ||
             images.length === 0 ||
             !category ||
-            !sizes ||
-            sizes.length === 0 ||
-            !colors ||
-            colors.length === 0 ||
-            !variants ||
-            variants.length === 0 ||
+            !Array.isArray(sizes) ||
+            !Array.isArray(colors) ||
+            !Array.isArray(variants) ||
             !features ||
             features.length === 0){
             return res.status(400).json({message:"Required product fields are missing"});
         }
 
         for (const variant of variants){
-            if(!variant.size || !variant.color || !variant.stock===undefined){
+            if(!variant.size || !variant.color || variant.stock === undefined){
                 return res.status(400).json({message:"Each variant must have color, size and stock"});
             }
             if(variant.stock<0){
@@ -44,7 +41,7 @@ export const createProduct=async(req,res)=>{
               }
         }
 
-        const product=await Product.create({title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features,rating,reviews});
+        const product=await Product.create({title:title.trim(),description:description.trim(),price,originalPrice,images,isNew:Boolean(isNew),onSale:Boolean(onSale),category,sizes,colors,variants,features,rating:0,reviews:0});
         res.status(201).json({message:"Product created successfully",product});
         
 
@@ -63,3 +60,16 @@ export const getAllProducts=async(req,res)=>{
         res.status(500).json({message:"Error fetching products",error:e.message});
     }
 }
+
+
+export const updateproduct=async(req,res)=>{
+    try{
+        const {id}=req.params;
+        const {title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features}=req.body;
+        const product=await Product.findByIdAndUpdate(id,{title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features},{new:true});
+        res.status(200).json({message:"Product updated successfully",product});
+        
+    }catch(e){
+        res.status(500).json({message:"Error updating product",error:e.message});
+    }
+};

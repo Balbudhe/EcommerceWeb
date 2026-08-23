@@ -26,14 +26,14 @@ import Cart from "../Models/Cart.js";
 export const addToCart = async (req, res) => {
   try {
     const {userId,productId,name,price,image,size,color,quantity=1} = req.body;
-    if(!userId || !productId || !name || !price === undefined)
+    if(!userId || !productId || !name || price === undefined)
     {
         return res.status(400).json({
             message: "Required product information is missing",
           });
     }
 
-    const cart =await Cart.findOne({userId});
+    let cart = await Cart.findOne({userId});
     if(!cart){
         cart=await Cart.create({userId,items:[{productId,name,price,image,size,color,quantity}] });
 
@@ -43,7 +43,7 @@ export const addToCart = async (req, res) => {
         });
     }
 
-    const existingitem=cart.items.find((item)=>item.productId===productId && item.size===(size || "") && item.color===(color || ""));
+    const existingitem=cart.items.find((item)=>String(item.productId) === String(productId) && item.size===(size || "") && item.color===(color || ""));
     if(existingitem){
         existingitem.quantity+=quantity;
     }else{
@@ -106,7 +106,7 @@ export const updateQuantity=async(req,res)=>{
         });
         }
 
-        const item=cart.items.find((item)=>item.productId===Number( productId) && item.size===size && item.color===color);
+        const item=cart.items.find((item)=>String(item.productId) === String(productId) && item.size===size && item.color===color);
         if(!item){
             return res.status(404).json({
                 message: "Item not found in cart",
@@ -144,7 +144,7 @@ export const removeItem=async(req,res)=>{
             });
         }
 
-       cart.items=cart.items.filter((item)=>item.productId!==Number( productId) || item.size!==size || item.color!==color);
+       cart.items=cart.items.filter((item)=>String(item.productId) !== String(productId) || item.size!==size || item.color!==color);
 
        await cart.save();
        return res.status(200).json({

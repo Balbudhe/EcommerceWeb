@@ -27,10 +27,9 @@
  * Auth token is restored from a saved session on refresh.
  * Cart / wishlist / orders stay on MongoDB.
  */
-import { products, categories } from "../data/products";
 import { loadAuthSession } from "../utils/authSession";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 let authToken = loadAuthSession()?.token || null;
 
@@ -79,6 +78,19 @@ async function request(path, options = {}) {
 }
 
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
+
+const normalizeProduct = (product) => ({
+  ...product,
+  id: product.id || product._id,
+  name: product.name || product.title,
+  image: product.image || product.images?.[0] || "",
+  images: product.images || [],
+  colors: product.colors || [],
+  sizes: product.sizes || [],
+  features: product.features || [],
+  rating: Number(product.rating || 0),
+  reviews: Number(product.reviews || 0),
+});
 
 /** Session mock store (RAM only — cleared on refresh) */
 const mock = {
@@ -178,45 +190,38 @@ export const api = {
 
   /* ---------- Catalog ---------- */
   async getProducts(params = {}) {
-    if (!API_BASE) {
-      await delay();
-      let list = [...products];
-      if (params.category) {
-        list = list.filter((p) => p.category === params.category);
-      }
-      if (params.search) {
-        const q = params.search.toLowerCase();
-        list = list.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q)
-        );
-      }
-      if (params.sort === "price-asc") list.sort((a, b) => a.price - b.price);
-      if (params.sort === "price-desc") list.sort((a, b) => b.price - a.price);
-      if (params.sort === "rating") list.sort((a, b) => b.rating - a.rating);
-      return list;
+    const data = await request("/product/allproducts");
+    let list = (data.products || data || []).map(normalizeProduct);
+    if (params.category) {
+      list = list.filter(
+        (product) =>
+          product.category?.toLowerCase() === params.category.toLowerCase(),
+      );
     }
-    const query = new URLSearchParams(
-      Object.entries(params).filter(([, v]) => v != null && v !== "")
-    ).toString();
-    return request(`/products${query ? `?${query}` : ""}`);
+    if (params.search) {
+      const query = params.search.toLowerCase();
+      list = list.filter(
+        (product) =>
+          product.name?.toLowerCase().includes(query) ||
+          product.description?.toLowerCase().includes(query),
+      );
+    }
+    if (params.sort === "price-asc") list.sort((a, b) => a.price - b.price);
+    if (params.sort === "price-desc") list.sort((a, b) => b.price - a.price);
+    if (params.sort === "rating") list.sort((a, b) => b.rating - a.rating);
+    return list;
   },
 
   async getProduct(id) {
-    if (!API_BASE) {
-      await delay();
-      return products.find((p) => String(p.id) === String(id)) || null;
-    }
-    return request(`/products/${id}`);
+    const products = await this.getProducts();
+    return products.find((product) => String(product.id) === String(id)) || null;
   },
 
   async getCategories() {
-    if (!API_BASE) {
-      await delay();
-      return categories;
-    }
-    return request("/categories");
+    const products = await this.getProducts();
+    return [...new Set(products.map((product) => product.category).filter(Boolean))]
+      .sort()
+      .map((name) => ({ id: name.toLowerCase(), name }));
   },
 
   /* ---------- Cart CRUD ---------- */
@@ -231,7 +236,7 @@ export const api = {
   async addToCart({ productId, quantity = 1, size, color, product }) {
     if (!API_BASE) {
       await delay();
-      const p = product || products.find((x) => x.id === productId);
+      const p = product;
       if (!p) throw new Error("Product not found");
       const item = mockCartItem(p, { quantity, size, color });
       const existing = mock.cart.find((i) => i.key === item.key);
@@ -320,11 +325,26 @@ export const api = {
 
   /* ---------- Orders ---------- */
   async getOrders() {
-    if (!API_BASE) {
-      await delay();
-      return [...mock.orders];
-    }
-    return request("/orders");
+    return request("/order/my-orders");
+  },
+
+  async cancelOrder(orderId) {
+    return request(`/order/${orderId}/cancel`, {
+      method: "PATCH",
+    });
+  },
+
+  async trackOrder(orderId) {
+    return request(`/order/${orderId}/track`);
+  },
+
+  async checkServiceability(pincode, { weight = 0.5, cod = 0 } = {}) {
+    const params = new URLSearchParams({
+      pincode: String(pincode),
+      weight: String(weight),
+      cod: String(cod),
+    });
+    return request(`/order/serviceability?${params.toString()}`);
   },
 
   async placeOrder(order) {
@@ -340,9 +360,23 @@ export const api = {
       mock.cart = [];
       return created;
     }
-    return request("/orders", {
+    return request("/order", {
       method: "POST",
       body: JSON.stringify(order),
+    });
+  },
+
+  async initiatePayment(order) {
+    return request("/order/payment/create", {
+      method: "POST",
+      body: JSON.stringify(order),
+    });
+  },
+
+  async verifyPayment(payment) {
+    return request("/order/payment/verify", {
+      method: "POST",
+      body: JSON.stringify(payment),
     });
   },
 };
