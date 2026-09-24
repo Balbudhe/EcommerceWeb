@@ -32,6 +32,21 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    materialCare: {
+      type: String,
+      default: "",
+    },
+    specifications: {
+      material: { type: String, default: "" },
+      bodyDimensions: { type: String, default: "" },
+      tableTopDimensions: { type: String, default: "" },
+      colour: { type: String, default: "" },
+      pattern: { type: String, default: "" },
+      foldedDepth: { type: String, default: "" },
+      assembly: { type: String, default: "" },
+      care: { type: String, default: "" },
+      recommendedUse: { type: String, default: "" },
+    },
 
     price: {
       type: Number,
@@ -54,6 +69,12 @@ const productSchema = new mongoose.Schema(
     onSale: {
       type: Boolean,
       default: false,
+    },
+    salePercent: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
     },
     category: {
       type: String,

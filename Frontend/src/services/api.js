@@ -79,6 +79,37 @@ async function request(path, options = {}) {
 
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
+export const slugify = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+export const SPECIFICATION_FIELDS = [
+  { key: "material", label: "Material", placeholder: "Solid Indian Teak" },
+  { key: "bodyDimensions", label: "Body dimensions", placeholder: '16" Height' },
+  { key: "tableTopDimensions", label: "Table top dimensions", placeholder: '14" Width x 4" Depth' },
+  { key: "colour", label: "Colour", placeholder: "Warm Brown" },
+  { key: "pattern", label: "Pattern", placeholder: "Classic Teak Wood" },
+  { key: "foldedDepth", label: "Folded depth", placeholder: '4"' },
+  { key: "assembly", label: "Assembly", placeholder: "No assembly required" },
+  { key: "care", label: "Care", placeholder: "Wipe with a damp cloth when needed" },
+  {
+    key: "recommendedUse",
+    label: "Recommended use",
+    placeholder: "Bedside Tables, Kitchen Counters, Washroom Counters etc.",
+  },
+];
+
+export const blankSpecifications = () =>
+  Object.fromEntries(SPECIFICATION_FIELDS.map((field) => [field.key, ""]));
+
+export const normalizeSpecifications = (specs = {}) =>
+  Object.fromEntries(
+    SPECIFICATION_FIELDS.map((field) => [field.key, String(specs?.[field.key] || "").trim()]),
+  );
+
 const normalizeProduct = (product) => ({
   ...product,
   id: product.id || product._id,
@@ -88,8 +119,12 @@ const normalizeProduct = (product) => ({
   colors: product.colors || [],
   sizes: product.sizes || [],
   features: product.features || [],
+  materialCare: product.materialCare || "",
+  specifications: normalizeSpecifications(product.specifications),
   rating: Number(product.rating || 0),
   reviews: Number(product.reviews || 0),
+  onSale: Boolean(product.onSale),
+  salePercent: Number(product.salePercent || 0),
 });
 
 /** Session mock store (RAM only — cleared on refresh) */
@@ -193,10 +228,11 @@ export const api = {
     const data = await request("/product/allproducts");
     let list = (data.products || data || []).map(normalizeProduct);
     if (params.category) {
-      list = list.filter(
-        (product) =>
-          product.category?.toLowerCase() === params.category.toLowerCase(),
-      );
+      const wanted = params.category.toLowerCase();
+      list = list.filter((product) => {
+        const name = String(product.category || "").toLowerCase();
+        return name === wanted || slugify(product.category) === wanted;
+      });
     }
     if (params.search) {
       const query = params.search.toLowerCase();
@@ -218,10 +254,23 @@ export const api = {
   },
 
   async getCategories() {
-    const products = await this.getProducts();
-    return [...new Set(products.map((product) => product.category).filter(Boolean))]
-      .sort()
-      .map((name) => ({ id: name.toLowerCase(), name }));
+    const data = await request("/categories");
+    const list = data.categories || data || [];
+    return list
+      .filter((category) => category.active !== false)
+      .map((category) => {
+        const name = category.name || "";
+        const id = slugify(name);
+        return {
+          id,
+          name,
+          image: category.image || "",
+          description: category.description || "",
+          shortName: name,
+          path: `/collection/${id}`,
+          subcategories: (category.subcategories || []).filter((item) => item.active !== false),
+        };
+      });
   },
 
   /* ---------- Cart CRUD ---------- */

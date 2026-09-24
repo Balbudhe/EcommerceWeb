@@ -1,7 +1,6 @@
-/* Left navigation scrollbar */
 .admin-shell aside nav {
   scrollbar-width: thin;
-  scrollbar-color: #ff8a3d #111c2e;
+  scrollbar-color: #b0894d #1f1913;
 }
 
 .admin-shell aside nav::-webkit-scrollbar {
@@ -9,16 +8,14 @@
 }
 
 .admin-shell aside nav::-webkit-scrollbar-track {
-  background: #111c2e;
-  border-radius: 999px;
+  background: #1f1913;
 }
 
 .admin-shell aside nav::-webkit-scrollbar-thumb {
-  background: #ff8a3d;
-  border: 2px solid #111c2e;
-  border-radius: 999px;
+  background: #b0894d;
+  border: 2px solid #1f1913;
 }
 
 .admin-shell aside nav::-webkit-scrollbar-thumb:hover {
-  background: #ffad73;
+  background: #e0b45a;
 }

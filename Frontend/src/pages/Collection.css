@@ -1,0 +1,126 @@
+.collection-page {
+  background: #faf7f2;
+  padding-bottom: 4.5rem;
+}
+
+.collection-head {
+  text-align: center;
+  padding: 3.6rem 0 2.4rem;
+}
+
+.collection-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.4vw, 3.35rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+  margin-bottom: 1.15rem;
+}
+
+.collection-head p {
+  max-width: 58rem;
+  margin-inline: auto;
+  color: #6f6a64;
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+.collection-body {
+  padding-top: 0.4rem;
+}
+
+.collection-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.35rem;
+  color: #6f6a64;
+  font-size: 0.88rem;
+}
+
+.collection-filters,
+.collection-sort {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.15rem;
+}
+
+.collection-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: #1a1a1a;
+}
+
+.collection-select select {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0.15rem 1.35rem 0.15rem 0;
+  color: #1a1a1a;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.collection-select select:focus {
+  outline: none;
+}
+
+.collection-select svg {
+  position: absolute;
+  right: 0;
+  pointer-events: none;
+  color: #1a1a1a;
+}
+
+.collection-count {
+  color: #6f6a64;
+  margin-left: 0.35rem;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+
+.collection-page .product-card {
+  gap: 0.7rem;
+}
+
+.collection-page .product-card-media {
+  aspect-ratio: 1 / 1;
+  background: #efe8db;
+}
+
+.collection-page .product-card-body h3 {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+@media (max-width: 1100px) {
+  .collection-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .collection-head {
+    padding: 2.6rem 0 1.6rem;
+  }
+
+  .collection-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
+  }
+}

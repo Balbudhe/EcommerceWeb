@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import User from "../Models/User.js";
 import Product from "../Models/Products.js";
 import Order from "../Models/Order.js";
@@ -13,22 +14,136 @@ import {
 const stock = (p) =>
   p.variants?.reduce((n, v) => n + Number(v.stock || 0), 0) || 0;
 const safe = "name email role createdAt updatedAt";
+const publicAdmin = (u) => ({
+  id: u._id,
+  name: u.name,
+  email: u.email,
+  role: u.role,
+});
+const signAdmin = (u) =>
+  jwt.sign({ id: u._id, role: u.role }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+const frontendOrigin = () =>
+  (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body,
-      u = await User.findOne({ email });
+      u = await User.findOne({ email: String(email || "").trim().toLowerCase() });
     if (!u || !(await bcrypt.compare(password || "", u.password)))
       return res.status(401).json({ message: "Invalid credentials" });
     if (u.role !== "admin")
       return res.status(404).json({ message: "Page not found" });
-    res.json({
-      token: jwt.sign({ id: u._id, role: u.role }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
-      }),
-      user: { id: u._id, name: u.name, email: u.email, role: u.role },
-    });
+    res.json({ token: signAdmin(u), user: publicAdmin(u) });
   } catch {
     res.status(500).json({ message: "Login failed" });
+  }
+};
+export const register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
+    if (String(password).length < 6)
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (await User.findOne({ email: normalizedEmail }))
+      return res
+        .status(400)
+        .json({ message: "An account with this email already exists" });
+    const u = await User.create({
+      name: String(name).trim(),
+      email: normalizedEmail,
+      password: await bcrypt.hash(password, 10),
+      role: "admin",
+    });
+    res.status(201).json({ token: signAdmin(u), user: publicAdmin(u) });
+  } catch {
+    res.status(500).json({ message: "Unable to create administrator" });
+  }
+};
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
+    if (!email) return res.status(400).json({ message: "Email is required" });
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)
+      return res.status(500).json({
+        message: "Email is not configured. Check EMAIL_USER and EMAIL_PASS in .env",
+      });
+    if (!process.env.JWT_SECRET)
+      return res.status(500).json({ message: "JWT_SECRET is missing in .env" });
+    const u = await User.findOne({ email, role: "admin" });
+    if (!u)
+      return res
+        .status(400)
+        .json({ message: "No administrator found with that email" });
+    const token = jwt.sign({ id: u._id, purpose: "admin-reset" }, process.env.JWT_SECRET, {
+      expiresIn: "10m",
+    });
+    const resetLink = `${frontendOrigin()}/admin/reset-password?token=${token}`;
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: String(process.env.EMAIL_PASS).replace(/\s+/g, ""),
+      },
+    });
+    await transporter.verify();
+    await transporter.sendMail({
+      from: `"Artiqulate Lifestyle" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Reset your Artiqulate Atelier password",
+      text: `Hello ${u.name},\n\nClick this link to reset your admin password (valid for 10 minutes):\n${resetLink}\n\nIf you did not request this, ignore this email.`,
+      html: `
+        <p>Hello <strong>${u.name}</strong>,</p>
+        <p>Click the button below to reset your administrator password. This link expires in <strong>10 minutes</strong>.</p>
+        <p><a href="${resetLink}" style="display:inline-block;padding:12px 20px;background:#17243a;color:#fff;text-decoration:none;border-radius:8px;">Reset password</a></p>
+        <p>Or copy this link:<br/><a href="${resetLink}">${resetLink}</a></p>
+      `,
+    });
+    res.json({ message: "Reset link sent. Check your email." });
+  } catch (error) {
+    let message = "Failed to send reset email";
+    if (
+      error.code === "EAUTH" ||
+      /Invalid login|Username and Password not accepted/i.test(error.message || "")
+    ) {
+      message =
+        "Gmail login failed. Use a Gmail App Password and remove spaces in EMAIL_PASS.";
+    } else if (error.message) {
+      message = error.message;
+    }
+    res.status(500).json({ message });
+  }
+};
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password)
+      return res
+        .status(400)
+        .json({ message: "Token and password are required" });
+    if (String(password).length < 6)
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const u = await User.findById(decoded.id);
+    if (!u || u.role !== "admin")
+      return res.status(400).json({ message: "Invalid or expired reset link" });
+    u.password = await bcrypt.hash(password, 10);
+    await u.save();
+    res.json({ message: "Password reset successfully. You can sign in now." });
+  } catch {
+    res.status(400).json({ message: "Invalid or expired reset link" });
   }
 };
 export const me = async (req, res) => {
@@ -210,14 +325,33 @@ export const addCategory = async (req, res) => {
     res.status(400).json({ message: e.message });
   }
 };
-export const toggleCategory = async (req, res) =>
-  res.json({
-    category: await Category.findByIdAndUpdate(
-      req.params.id,
-      { active: req.body.active },
-      { new: true },
-    ),
-  });
+export const updateCategory = async (req, res) => {
+  try {
+    const current = await Category.findById(req.params.id);
+    if (!current) return res.status(404).json({ message: "Category not found" });
+    const updates = {};
+    if (req.body.name !== undefined) updates.name = String(req.body.name).trim();
+    if (req.body.description !== undefined) updates.description = req.body.description;
+    if (req.body.image !== undefined) updates.image = req.body.image;
+    if (req.body.active !== undefined) updates.active = req.body.active;
+    if (req.body.subcategories !== undefined) updates.subcategories = req.body.subcategories;
+    const category = await Category.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
+    if (updates.name && updates.name !== current.name) {
+      await Product.updateMany({ category: current.name }, { category: updates.name });
+    }
+    res.json({ category });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+};
+export const deleteCategory = async (req, res) => {
+  const category = await Category.findByIdAndDelete(req.params.id);
+  if (!category) return res.status(404).json({ message: "Category not found" });
+  res.json({ message: "Category deleted", category });
+};
 export const coupons = async (_q, res) =>
   res.json({ coupons: await Coupon.find().sort({ createdAt: -1 }) });
 export const addCoupon = async (req, res) => {

@@ -6,6 +6,7 @@ import authRouter from "./UseRouter/authRouter.js";
 import cartRouter from "./UseRouter/cartRouter.js";
 import productRouter from "./UseRouter/productRouter.js";
 import adminRouter from "./UseRouter/adminRouter.js";
+import categoryRouter from "./UseRouter/categoryRouter.js";
 import orderRouter from "./UseRouter/orderRouter.js";
 import wishlistRouter from "./UseRouter/wishlistRouter.js";
 dotenv.config();
@@ -18,6 +19,7 @@ app.use("/api/auth",authRouter);
 app.use("/api/cart",cartRouter);
 app.use("/api/product",productRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/categories", categoryRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/order", orderRouter);
 app.listen(process.env.PORT,()=>{

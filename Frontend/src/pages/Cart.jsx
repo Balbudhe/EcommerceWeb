@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { formatPrice } from "../utils/formatPrice";
+import MediaSlot from "../components/ui/MediaSlot";
 
 export default function Cart() {
   const { items, subtotal, updateQuantity, removeFromCart, clearCart } = useCart();
@@ -17,23 +18,31 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="page container">
-        <div className="empty-state">
-          <h3>Your cart is empty</h3>
-          <p>Browse the collection and add something you love.</p>
-          <Link to="/shop" className="btn btn-primary">Continue shopping</Link>
+      <div>
+        <header className="page-banner">
+          <p className="eyebrow">Bag</p>
+          <h1>Your cart</h1>
+        </header>
+        <div className="page container" style={{ paddingTop: "2rem" }}>
+          <div className="empty-state">
+            <h3>Your cart is empty</h3>
+            <p>Browse furniture, temples, and lighting — then add something you love.</p>
+            <Link to="/shop" className="btn btn-primary">Continue shopping</Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page container">
+    <div>
+      <header className="page-banner">
+        <p className="eyebrow">Bag</p>
+        <h1>Your cart</h1>
+        <p>{items.length} item{items.length > 1 ? "s" : ""} in bag</p>
+      </header>
+      <div className="page container" style={{ paddingTop: "2rem" }}>
       <header className="cart-head">
-        <div>
-          <h1 className="page-title">Your cart</h1>
-          <p className="page-sub">{items.length} item{items.length > 1 ? "s" : ""} in bag</p>
-        </div>
         <button type="button" className="btn btn-outline btn-sm" onClick={onClearCart}>
           Clear cart
         </button>
@@ -44,7 +53,7 @@ export default function Cart() {
           {items.map((item) => (
             <article key={`${item.productId}-${item.size}-${item.color}`} className="cart-item surface-panel">
               <Link to={`/product/${item.productId}`} className="cart-thumb">
-                <img src={item.image} alt={item.name} />
+                <MediaSlot src={item.image} alt={item.name} label="Product" />
               </Link>
               <div className="cart-info">
                 <Link to={`/product/${item.productId}`}>
@@ -117,6 +126,7 @@ export default function Cart() {
             Continue shopping
           </Link>
         </aside>
+      </div>
       </div>
     </div>
   );

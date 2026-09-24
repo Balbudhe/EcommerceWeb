@@ -30,11 +30,12 @@ export default function AdminApp() {
       .finally(() => setChecking(false));
   }, [token]);
   if (checking)
-    return <div className="admin-loading full">Checking secure session…</div>;
+    return <div className="admin-loading full">Opening the atelier…</div>;
   if (!auth)
     return (
       <Routes>
         <Route path="login" element={<AdminLogin onLogin={setAuth} />} />
+        <Route path="reset-password" element={<AdminLogin onLogin={setAuth} />} />
         <Route path="*" element={<Navigate to="login" replace />} />
       </Routes>
     );

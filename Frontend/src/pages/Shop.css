@@ -1,9 +1,14 @@
-.shop-head {
+.shop-page .page {
+  padding-top: 2.25rem;
+}
+
+.shop-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: end;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-bottom: 1.85rem;
 }
 
 .shop-sort {
@@ -11,48 +16,38 @@
   margin-bottom: 0;
 }
 
-.shop-layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.shop-filters h3 {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  margin-bottom: 0.9rem;
-}
-
 .filter-list {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .filter-item {
-  text-align: left;
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--radius-sm);
+  padding: 0.58rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--muted);
   transition: all var(--transition);
 }
 
 .filter-item:hover,
 .filter-item.active {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--cream);
 }
 
-@media (max-width: 800px) {
-  .shop-layout {
-    grid-template-columns: 1fr;
+@media (max-width: 700px) {
+  .shop-toolbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .filter-list {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .shop-sort {
+    min-width: 0;
   }
 }

@@ -1,96 +1,195 @@
 .footer {
   margin-top: auto;
-  padding: 3.5rem 0 1.5rem;
-  background: linear-gradient(180deg, transparent, rgba(20, 24, 27, 0.04));
-  border-top: 1px solid rgba(213, 220, 224, 0.7);
+  position: relative;
+  background: #faf7f2;
+  color: #1a1a1a;
+  padding: 3.4rem 0 1.6rem;
 }
 
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1.4fr repeat(3, 1fr);
+.footer h2 {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.4;
+  margin-bottom: 1.15rem;
+  color: #1a1a1a;
+}
+
+.footer-quick {
+  text-align: center;
+  margin-bottom: 3.1rem;
+}
+
+.footer-quick nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.35rem;
+}
+
+.footer-quick a {
+  color: #6f6f6f;
+  font-size: 0.92rem;
+}
+
+.footer-quick a:hover,
+.footer-policies a:hover,
+.footer-social a:hover {
+  color: #1a1a1a;
+}
+
+.footer-mid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
   gap: 2rem;
-  padding-bottom: 2.5rem;
+  padding-bottom: 2.6rem;
 }
 
-.footer-brand p {
-  margin-top: 0.85rem;
-  color: var(--muted);
-  max-width: 34ch;
-  font-size: 0.95rem;
+.footer-form {
+  display: flex;
+  align-items: center;
+  width: min(100%, 340px);
+  min-height: 44px;
+  border: 1px solid #1a1a1a;
+  background: transparent;
+}
+
+.footer-form input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 0.9rem;
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  font-size: 0.92rem;
+}
+
+.footer-form input::placeholder {
+  color: #8a8a8a;
+}
+
+.footer-form input:focus {
+  outline: none;
+}
+
+.footer-form button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #1a1a1a;
+  flex-shrink: 0;
+}
+
+.footer-form button:hover {
+  color: #555;
 }
 
 .footer-social {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1.1rem;
+  align-items: center;
+  gap: 0.85rem;
+  padding-bottom: 0.1rem;
 }
 
 .footer-social a {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
+  width: 22px;
+  height: 22px;
+  color: #2c241b;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.55);
-  transition: all var(--transition);
+  transition: color 0.25s ease, transform 0.25s ease;
 }
 
 .footer-social a:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  color: #c48a2b;
+  transform: translateY(-1px);
 }
 
-.footer h4 {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  margin-bottom: 0.9rem;
-  letter-spacing: 0.02em;
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
-.footer ul {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.footer a {
-  color: var(--muted);
-  font-size: 0.92rem;
-  transition: color var(--transition);
-}
-
-.footer a:hover {
-  color: var(--accent);
-}
-
-.footer-contact li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.55rem;
-  color: var(--muted);
-  font-size: 0.92rem;
+.footer-rule {
+  border-top: 1px solid #e6e0d8;
 }
 
 .footer-bottom {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
   flex-wrap: wrap;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border-soft);
-  color: var(--muted-soft);
-  font-size: 0.82rem;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  padding-top: 1.45rem;
+  color: #6f6f6f;
+  font-size: 0.78rem;
 }
 
-@media (max-width: 900px) {
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
+.footer-bottom p {
+  margin: 0;
+}
+
+.footer-bottom p::after {
+  content: "·";
+  margin-left: 0.55rem;
+  color: #9a9a9a;
+}
+
+.footer-policies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0;
+}
+
+.footer-policies a {
+  color: #6f6f6f;
+  font-size: 0.78rem;
+}
+
+.footer-policies a:not(:last-child)::after {
+  content: "·";
+  margin: 0 0.55rem;
+  color: #9a9a9a;
+}
+
+.footer-whatsapp {
+  position: fixed;
+  left: 1.15rem;
+  bottom: 1.15rem;
+  z-index: 40;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 20px rgba(18, 140, 70, 0.28);
+}
+
+.footer-whatsapp svg {
+  width: 30px;
+  height: 30px;
+}
+
+.footer-whatsapp:hover {
+  color: #fff;
+  transform: scale(1.04);
+}
+
+@media (max-width: 800px) {
+  .footer-mid {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.75rem;
   }
-}
 
-@media (max-width: 560px) {
-  .footer-grid {
-    grid-template-columns: 1fr;
+  .footer-form {
+    width: 100%;
   }
 }

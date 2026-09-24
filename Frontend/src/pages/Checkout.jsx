@@ -1,3 +1,4 @@
+import "./Checkout.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -121,7 +122,7 @@ export default function Checkout() {
           key: paymentOrder.keyId,
           amount: paymentOrder.gatewayOrder.amount,
           currency: paymentOrder.gatewayOrder.currency,
-          name: "VORA",
+          name: "Artiqulate Lifestyle",
           description: "Store purchase",
           order_id: paymentOrder.gatewayOrder.id,
           prefill: {
@@ -129,7 +130,7 @@ export default function Checkout() {
             email: form.email,
             contact: form.phone,
           },
-          theme: { color: "#0f6b5c" },
+          theme: { color: "#3d2b1f" },
           handler: resolve,
           modal: {
             ondismiss: () => reject(new Error("Payment was cancelled")),
@@ -230,11 +231,11 @@ export default function Checkout() {
           </div>
 
           {form.payment === "online" ? (
-            <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
+            <p className="checkout-note">
               Razorpay securely handles cards, UPI, netbanking, and wallets.
             </p>
           ) : (
-            <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
+            <p className="checkout-note">
               Pay with cash when your order arrives.
             </p>
           )}
@@ -275,46 +276,6 @@ export default function Checkout() {
           </div>
         </aside>
       </form>
-
-      <style>{`
-        .checkout-layout {
-          display: grid;
-          grid-template-columns: 1.3fr 0.7fr;
-          gap: 1.5rem;
-          align-items: start;
-        }
-        .checkout-card h3,
-        .checkout-summary h3 {
-          font-family: var(--font-display);
-          margin-bottom: 1rem;
-        }
-        .checkout-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.85rem;
-        }
-        .checkout-summary ul {
-          display: flex;
-          flex-direction: column;
-          gap: 0.65rem;
-          margin-bottom: 1rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid var(--border);
-        }
-        .checkout-summary li {
-          display: flex;
-          justify-content: space-between;
-          gap: 1rem;
-          font-size: 0.9rem;
-          color: var(--muted);
-        }
-        @media (max-width: 860px) {
-          .checkout-layout { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 560px) {
-          .checkout-row { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }

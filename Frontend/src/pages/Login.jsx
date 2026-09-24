@@ -102,7 +102,7 @@ export default function Login() {
         </form>
 
         <p className="auth-switch">
-          New to VORA? <Link to="/register">Create an account</Link>
+          New to Artiqulate? <Link to="/register">Create an account</Link>
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { Edit3, Eye, Trash2 } from "lucide-react";
 import { money, stock } from "../adminApi";
+import { salePercent as calcSalePercent } from "../../utils/formatPrice";
 export default function ProductTable({ products, onView, onEdit, onDelete }) {
   if (!products.length)
     return <div className="admin-empty">No products found.</div>;
@@ -20,10 +21,7 @@ export default function ProductTable({ products, onView, onEdit, onDelete }) {
         <tbody>
           {products.map((p) => {
             const qty = stock(p),
-              off =
-                p.originalPrice > p.price
-                  ? Math.round((1 - p.price / p.originalPrice) * 100)
-                  : 0;
+              off = calcSalePercent(p);
             return (
               <tr key={p._id}>
               <td data-label="Product">

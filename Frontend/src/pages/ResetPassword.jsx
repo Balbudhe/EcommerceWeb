@@ -105,7 +105,7 @@ export default function ResetPassword() {
         <span className="eyebrow">Account recovery</span>
         <h1 className="page-title">Reset password</h1>
         <p className="page-sub">
-          Choose a new password for your VORA account.
+          Choose a new password for your Artiqulate account.
         </p>
 
         {!token ? (

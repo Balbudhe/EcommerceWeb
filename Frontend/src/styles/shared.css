@@ -1,23 +1,22 @@
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  gap: 2rem 1.35rem;
 }
 
 .surface-panel {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(213, 220, 224, 0.8);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  backdrop-filter: blur(8px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.6rem;
 }
 
 .page-title {
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  font-weight: 750;
-  letter-spacing: -0.03em;
-  margin-bottom: 0.35rem;
+  font-size: clamp(2.1rem, 4.5vw, 3.2rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
 }
 
 .page-sub {
@@ -32,79 +31,108 @@
 }
 
 .choice-chip {
-  min-height: 40px;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  border: 1.5px solid var(--border);
-  background: rgba(255, 255, 255, 0.7);
-  font-weight: 600;
+  min-height: 42px;
+  padding: 0.4rem 0.95rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 500;
   font-size: 0.88rem;
+  letter-spacing: 0.02em;
   transition: all var(--transition);
 }
 
 .choice-chip:hover,
 .choice-chip.active {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--cream);
 }
 
 .qty-control {
   display: inline-flex;
   align-items: center;
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
 }
 
 .qty-control button {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
+  transition: background var(--transition), color var(--transition);
+}
+
+.qty-control button:hover {
+  background: var(--accent);
+  color: var(--cream);
 }
 
 .qty-control span {
-  min-width: 2rem;
+  min-width: 2.1rem;
   text-align: center;
-  font-weight: 650;
+  font-weight: 600;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  color: var(--muted);
+}
+
+.summary-row.total {
+  margin-top: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .auth-card,
 .checkout-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  padding: 2.4rem 2rem;
+}
+
+.auth-card .page-title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
 }
 
 .auth-switch {
   text-align: center;
-  margin-top: 1.25rem;
+  margin-top: 1.35rem;
   color: var(--muted);
   font-size: 0.92rem;
 }
 
 .auth-switch a {
-  color: var(--accent);
-  font-weight: 700;
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
 }
 
 .forgot-link {
   display: inline-block;
   margin-top: 0.35rem;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
   transition: color var(--transition);
 }
 
 .forgot-link:hover {
-  color: var(--accent-hover);
+  color: var(--ink);
 }
 
 .auth-back {
@@ -112,14 +140,33 @@
   align-items: center;
   gap: 0.35rem;
   margin-bottom: 1.25rem;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
   transition: color var(--transition);
 }
 
 .auth-back:hover {
-  color: var(--accent);
+  color: var(--ink);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 200;
+  background: var(--accent);
+  color: var(--cream);
+  padding: 0.7rem 1rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
 }
 
 @media (max-width: 1100px) {
@@ -131,12 +178,6 @@
 @media (max-width: 800px) {
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 420px) {
-  .product-grid {
-    grid-template-columns: 1fr;
+    gap: 1.35rem 0.9rem;
   }
 }

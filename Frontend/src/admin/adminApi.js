@@ -1,5 +1,5 @@
 import axios from "../utils/Axios";
-const KEY = "vora_admin_session";
+const KEY = "artiqulate_admin_session";
 export const session = {
   get() {
     try {

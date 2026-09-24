@@ -3,7 +3,7 @@ import Product from "../Models/Products.js";
 
 export const createProduct=async(req,res)=>{
     try{
-        const {title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features}=req.body;
+        const {title,description,materialCare,specifications,price,originalPrice,images,isNew,onSale,salePercent,category,sizes,colors,variants,features}=req.body;
 
         if(!title ||
             !description ||
@@ -41,7 +41,7 @@ export const createProduct=async(req,res)=>{
               }
         }
 
-        const product=await Product.create({title:title.trim(),description:description.trim(),price,originalPrice,images,isNew:Boolean(isNew),onSale:Boolean(onSale),category,sizes,colors,variants,features,rating:0,reviews:0});
+        const product=await Product.create({title:title.trim(),description:description.trim(),materialCare:String(materialCare||"").trim(),specifications:specifications||{},price,originalPrice,images,isNew:Boolean(isNew),onSale:Boolean(onSale),salePercent:Number(salePercent||0),category,sizes,colors,variants,features,rating:0,reviews:0});
         res.status(201).json({message:"Product created successfully",product});
         
 
@@ -65,8 +65,8 @@ export const getAllProducts=async(req,res)=>{
 export const updateproduct=async(req,res)=>{
     try{
         const {id}=req.params;
-        const {title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features}=req.body;
-        const product=await Product.findByIdAndUpdate(id,{title,description,price,originalPrice,images,isNew,onSale,category,sizes,colors,variants,features},{new:true});
+        const {title,description,materialCare,specifications,price,originalPrice,images,isNew,onSale,salePercent,category,sizes,colors,variants,features}=req.body;
+        const product=await Product.findByIdAndUpdate(id,{title,description,materialCare:String(materialCare||"").trim(),specifications:specifications||{},price,originalPrice,images,isNew,onSale,salePercent:Number(salePercent||0),category,sizes,colors,variants,features},{new:true});
         res.status(200).json({message:"Product updated successfully",product});
         
     }catch(e){

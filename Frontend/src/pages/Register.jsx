@@ -29,7 +29,7 @@ export default function Register() {
   return (
     <div className="page page-narrow">
       <div className="auth-card">
-        <span className="eyebrow">Join VORA</span>
+        <span className="eyebrow">Join Artiqulate</span>
         <h1 className="page-title">Create account</h1>
         <p className="page-sub">Save favorites and checkout faster next time.</p>
 

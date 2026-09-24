@@ -3,16 +3,40 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
+const signUserToken = (user) =>
+  jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+
+const publicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+});
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email, and password are required" });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
     const existuser = await User.findOne({ email });
     if (existuser) {
       return res.status(400).json({ message: "User already exists" });
     }
+
     const hashpassword = await bcrypt.hash(password, 10);
-    await User.create({ name, email, password: hashpassword });
-    res.status(201).json({ message: "User created successfully" });
+    const user = await User.create({ name, email, password: hashpassword, role: "user" });
+    res.status(201).json({
+      message: "User created successfully",
+      token: signUserToken(user),
+      user: publicUser(user),
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
@@ -29,16 +53,10 @@ export const loginUser = async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: "Invalid password" });
     }
-    const token = jwt.sign({
-      id: user._id,
-      role: user.role,
-    }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
     res.status(200).json({
       message: "Login successful",
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      token: signUserToken(user),
+      user: publicUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -94,9 +112,9 @@ export const sendVerificationEmail = async (req, res) => {
     await transporter.verify();
 
     await transporter.sendMail({
-      from: `"VORA Support" <${process.env.EMAIL_USER}>`,
+      from: `"Artiqulate Lifestyle" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Reset your VORA password",
+      subject: "Reset your Artiqulate password",
       text: `Hello ${user.name},\n\nClick this link to reset your password (valid for 10 minutes):\n${resetLink}\n\nIf you did not request this, ignore this email.`,
       html: `
         <p>Hello <strong>${user.name}</strong>,</p>

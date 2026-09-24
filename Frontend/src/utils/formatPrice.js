@@ -7,3 +7,12 @@ export function formatPrice(amount) {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+export function salePercent(product) {
+  const price = Number(product?.price) || 0;
+  const original = Number(product?.originalPrice) || 0;
+  if (original > price && price >= 0) {
+    return Math.max(1, Math.round(((original - price) / original) * 100));
+  }
+  return 0;
+}

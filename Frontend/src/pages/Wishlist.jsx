@@ -13,9 +13,13 @@ export default function Wishlist() {
   const list = products.filter((p) => ids.includes(p.id));
 
   return (
-    <div className="page container">
-      <h1 className="page-title">Wishlist</h1>
-      <p className="page-sub">Saved pieces you can revisit anytime.</p>
+    <div>
+      <header className="page-banner">
+        <p className="eyebrow">Saved</p>
+        <h1>Wishlist</h1>
+        <p>Saved teakwood pieces you can revisit anytime.</p>
+      </header>
+      <div className="page container" style={{ paddingTop: "2rem" }}>
 
       {list.length === 0 ? (
         <div className="empty-state">
@@ -30,6 +34,7 @@ export default function Wishlist() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

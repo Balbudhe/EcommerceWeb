@@ -17,6 +17,8 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [lastAdded, setLastAdded] = useState(null);
 
   const userId = user?.id || user?._id;
 
@@ -73,7 +75,12 @@ try{
 
     const {data}=await axiosInstance.post("/cart/add",payload);
     setItems(normalizeCart(data));
-    setToast(data.message || "Item added to cart successfully");
+    setLastAdded({
+      name: product.name,
+      image: product.image || product.images?.[0] || "",
+      price: product.price,
+    });
+    setDrawerOpen(true);
   }catch(error){
     console.error("Add to cart error:", error);
 
@@ -159,8 +166,11 @@ try{
       refreshCart,
       toast,
       setToast,
+      drawerOpen,
+      setDrawerOpen,
+      lastAdded,
     };
-  }, [items, loading, toast, refreshCart]);
+  }, [items, loading, toast, refreshCart, drawerOpen, lastAdded]);
 
   return (
     <CartContext.Provider value={value}>

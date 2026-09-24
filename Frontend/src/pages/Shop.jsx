@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/product/ProductCard";
 import { api } from "../services/api";
+import { COLLECTIONS } from "../data/site";
 
 export default function Shop() {
   const [params, setParams] = useSearchParams();
@@ -41,8 +42,9 @@ export default function Shop() {
   const title = useMemo(() => {
     if (search) return `Results for “${search}”`;
     if (category) {
-      const cat = categories.find((c) => c.id === category);
-      return cat ? cat.name : "Shop";
+      const fromApi = categories.find((c) => c.id === category);
+      const fromSite = COLLECTIONS.find((c) => c.slug === category);
+      return fromApi?.name || fromSite?.name || "Shop";
     }
     return "All products";
   }, [category, search, categories]);
@@ -54,32 +56,20 @@ export default function Shop() {
     setParams(next);
   };
 
+  const filters = categories.length
+    ? categories
+    : COLLECTIONS.map((c) => ({ id: c.slug, name: c.shortName }));
+
   return (
-    <div className="page container shop">
-      <header className="shop-head">
-        <div>
-          <span className="eyebrow">Shop</span>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-sub">{products.length} products available</p>
-        </div>
-        <div className="field shop-sort">
-          <label htmlFor="sort">Sort by</label>
-          <select
-            id="sort"
-            value={sort}
-            onChange={(e) => update("sort", e.target.value)}
-          >
-            <option value="featured">Featured</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="rating">Top rated</option>
-          </select>
-        </div>
+    <div className="shop-page">
+      <header className="page-banner">
+        <p className="eyebrow">Collection</p>
+        <h1>{title}</h1>
+        <p>{loading ? "Loading the collection…" : `${products.length} products available`}</p>
       </header>
 
-      <div className="shop-layout">
-        <aside className="shop-filters surface-panel">
-          <h3>Categories</h3>
+      <div className="page container shop">
+        <div className="shop-toolbar">
           <div className="filter-list">
             <button
               className={`filter-item ${!category ? "active" : ""}`}
@@ -87,7 +77,7 @@ export default function Shop() {
             >
               All
             </button>
-            {categories.map((c) => (
+            {filters.map((c) => (
               <button
                 key={c.id}
                 className={`filter-item ${category === c.id ? "active" : ""}`}
@@ -97,30 +87,41 @@ export default function Shop() {
               </button>
             ))}
           </div>
-
-          {search ? (
-            <button className="btn btn-outline btn-sm btn-block" onClick={() => update("search", "")}>
-              Clear search
-            </button>
-          ) : null}
-        </aside>
-
-        <div>
-          {loading ? (
-            <div className="empty-state">Loading products…</div>
-          ) : products.length === 0 ? (
-            <div className="empty-state">
-              <h3>No products found</h3>
-              <p>Try another category or clear your search.</p>
-            </div>
-          ) : (
-            <div className="product-grid">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          )}
+          <div className="field shop-sort">
+            <label htmlFor="sort">Sort by</label>
+            <select
+              id="sort"
+              value={sort}
+              onChange={(e) => update("sort", e.target.value)}
+            >
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Top rated</option>
+            </select>
+          </div>
         </div>
+
+        {search ? (
+          <button className="btn btn-outline btn-sm" onClick={() => update("search", "")}>
+            Clear search
+          </button>
+        ) : null}
+
+        {loading ? (
+          <div className="empty-state">Loading products…</div>
+        ) : products.length === 0 ? (
+          <div className="empty-state">
+            <h3>No products found</h3>
+            <p>Add products from the backend, or try another category.</p>
+          </div>
+        ) : (
+          <div className="product-grid">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

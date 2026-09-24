@@ -1,3 +1,4 @@
+import "./Account.css";
 import { Link, Navigate } from "react-router-dom";
 import { Heart, LogOut, Package, ShoppingBag, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -267,113 +268,6 @@ export default function Account() {
           </div>
         )}
       </div>
-
-      <style>{`
-        .account-layout {
-          display: grid;
-          grid-template-columns: 280px 1fr;
-          gap: 1.25rem;
-          align-items: start;
-        }
-        .account-side { text-align: center; }
-        .account-avatar {
-          width: 72px;
-          height: 72px;
-          margin: 0 auto 0.85rem;
-          border-radius: 50%;
-          background: var(--accent-soft);
-          color: var(--accent);
-          display: grid;
-          place-items: center;
-        }
-        .account-side h3 { font-family: var(--font-display); }
-        .account-side > p {
-          color: var(--muted);
-          font-size: 0.9rem;
-          margin-bottom: 1.25rem;
-        }
-        .account-side nav {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-          text-align: left;
-        }
-        .account-side nav a,
-        .account-side nav button {
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          padding: 0.7rem 0.75rem;
-          border-radius: var(--radius-sm);
-          font-weight: 600;
-          color: var(--muted);
-          width: 100%;
-        }
-        .account-side nav a:hover,
-        .account-side nav button:hover,
-        .account-side nav button.active {
-          background: var(--accent-soft);
-          color: var(--accent);
-        }
-        .account-heading {
-          font-family: var(--font-display);
-          margin-bottom: 1rem;
-        }
-        .order-cards {
-          display: flex;
-          flex-direction: column;
-          gap: 0.9rem;
-        }
-        .order-card {
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          padding: 1rem;
-          background: rgba(255,255,255,0.7);
-        }
-        .order-card-head,
-        .order-card-foot {
-          display: flex;
-          justify-content: space-between;
-          gap: 1rem;
-          align-items: center;
-        }
-        .order-card-head p,
-        .order-items p,
-        .order-card-foot p {
-          color: var(--muted);
-          font-size: 0.82rem;
-          margin: 0.15rem 0 0;
-        }
-        .order-status {
-          border-radius: 999px;
-          padding: 0.2rem 0.65rem;
-          font-size: 0.75rem;
-          font-weight: 700;
-        }
-        .order-status.live { background: var(--accent-soft); color: var(--accent); }
-        .order-status.cancelled { background: #fde8e6; color: var(--danger); }
-        .order-items {
-          display: flex;
-          flex-direction: column;
-          gap: 0.65rem;
-          margin: 0.9rem 0;
-        }
-        .order-items li {
-          display: grid;
-          grid-template-columns: 48px 1fr auto;
-          gap: 0.7rem;
-          align-items: center;
-        }
-        .order-items img {
-          width: 48px;
-          height: 56px;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-        @media (max-width: 800px) {
-          .account-layout { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,24 +1,34 @@
 import "./ProductCard.css";
 import { Link } from "react-router-dom";
-import { Heart, ShoppingBag, Star } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
-import { formatPrice } from "../../utils/formatPrice";
+import { formatPrice, salePercent } from "../../utils/formatPrice";
+import MediaSlot from "../ui/MediaSlot";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { toggle, isWishlisted } = useWishlist();
   const wished = isWishlisted(product.id);
+  const off = salePercent(product);
+  const hoverImg = product.images?.[1];
 
   return (
     <article className="product-card">
       <div className="product-card-media">
         <Link to={`/product/${product.id}`}>
-          <img src={product.image} alt={product.name} loading="lazy" />
+          <MediaSlot src={product.image} alt={product.name} label="Product image" />
+          {hoverImg ? (
+            <img src={hoverImg} alt="" className="product-card-hover" loading="lazy" />
+          ) : null}
         </Link>
         <div className="product-card-badges">
-          {product.onSale ? <span className="badge badge-sale">Sale</span> : null}
-          {product.isNew ? <span className="badge badge-new">New</span> : null}
+          {product.isNew ? (
+            <span className="badge badge-new">New Launch</span>
+          ) : product.onSale ? (
+            <span className="badge badge-best">Best-Seller</span>
+          ) : null}
+          {product.onSale && off > 0 ? <span className="badge badge-sale">{off}% OFF</span> : null}
         </div>
         <button
           className={`btn-icon product-wish ${wished ? "active" : ""}`}
@@ -27,32 +37,21 @@ export default function ProductCard({ product }) {
         >
           <Heart size={16} fill={wished ? "currentColor" : "none"} />
         </button>
+        <button type="button" className="product-atc" onClick={() => addToCart(product)}>
+          Add to cart
+        </button>
       </div>
 
       <div className="product-card-body">
-        <p className="product-card-cat">{product.category}</p>
         <Link to={`/product/${product.id}`}>
           <h3>{product.name}</h3>
         </Link>
-        <div className="product-card-meta">
-          <div className="price">
-            <span className="price-current">{formatPrice(product.price)}</span>
-            {product.originalPrice ? (
-              <span className="price-old">{formatPrice(product.originalPrice)}</span>
-            ) : null}
-          </div>
-          <span className="product-rating">
-            <Star size={14} fill="currentColor" />
-            {product.rating}
-          </span>
+        <div className="price">
+          <span className="price-current">{formatPrice(product.price)}</span>
+          {product.originalPrice ? (
+            <span className="price-old">{formatPrice(product.originalPrice)}</span>
+          ) : null}
         </div>
-        <button
-          className="btn btn-outline btn-sm btn-block"
-          onClick={() => addToCart(product)}
-        >
-          <ShoppingBag size={16} />
-          Add to cart
-        </button>
       </div>
     </article>
   );

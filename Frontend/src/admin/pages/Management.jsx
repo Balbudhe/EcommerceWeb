@@ -14,23 +14,32 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { api, productApi, money, stock } from "../adminApi";
+import { api, money, stock } from "../adminApi";
+import { SPECIFICATION_FIELDS, blankSpecifications, normalizeSpecifications } from "../../services/api";
 import ProductTable from "../components/ProductTable";
 import UserManagement from "../components/UserManagement";
 import CategoriesManagement from "../components/CategoriesManagement";
 import CouponManagement from "../components/CouponManagement";
-import "../components/ClothingSelectors.css";
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"];
-const CLOTHING_COLORS = [
-  ["Black", "#111827"], ["White", "#ffffff"], ["Red", "#dc2626"],
-  ["Blue", "#2563eb"], ["Green", "#16a34a"], ["Yellow", "#facc15"],
-  ["Pink", "#ec4899"], ["Purple", "#9333ea"], ["Orange", "#f97316"],
-  ["Brown", "#92400e"], ["Grey", "#6b7280"], ["Navy", "#172554"],
-  ["Maroon", "#7f1d1d"], ["Beige", "#d6c6a5"],
+import { COLLECTIONS, SITE } from "../../data/site";
+import "../components/ProductSelectors.css";
+const PIECE_SIZES = ["Compact", "Standard", "Large", "Extra Large", "Custom"];
+const WOOD_FINISHES = [
+  ["Natural Teak", "#c4a574"],
+  ["Honey Teak", "#d4a054"],
+  ["Dark Walnut", "#4a2f1a"],
+  ["Walnut", "#6b4226"],
+  ["Antique Gold", "#b0894d"],
+  ["Ivory", "#f3eadc"],
+  ["Espresso", "#2c241b"],
+  ["Black", "#1a1410"],
+  ["White", "#faf6ef"],
+  ["Natural", "#d6c6a5"],
 ];
 const blank = {
   title: "",
   description: "",
+  materialCare: "",
+  specifications: blankSpecifications(),
   price: "",
   originalPrice: "",
   category: "",
@@ -86,19 +95,37 @@ export default function Management({ active, setActive, user, onUser }) {
     [customSizeOpen, setCustomSizeOpen] = useState(false),
     [customSize, setCustomSize] = useState(""),
     [customColorOpen, setCustomColorOpen] = useState(false),
-    [customColor, setCustomColor] = useState({ name: "", hex: "#64748b" });
+    [customColor, setCustomColor] = useState({ name: "", hex: "#c4a574" }),
+    [notice, setNotice] = useState(""),
+    [confirmDelete, setConfirmDelete] = useState(null);
+  const flash = (message) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 3200);
+  };
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const [dash, cats, coupons, sliders, users, orders] = await Promise.all([
+      const [dash, coupons, sliders, users, orders] = await Promise.all([
         api("get", "/dashboard"),
-        api("get", "/categories"),
         api("get", "/coupons"),
         api("get", "/sliders"),
         api("get", "/users"),
         api("get", "/orders"),
       ]);
+      let cats = await api("get", "/categories");
+      if (!cats.categories?.length) {
+        await Promise.all(
+          COLLECTIONS.map((collection) =>
+            api("post", "/categories", {
+              name: collection.name,
+              description: collection.description,
+              active: true,
+            }),
+          ),
+        );
+        cats = await api("get", "/categories");
+      }
       setData({
         ...dash,
         categories: cats.categories,
@@ -129,11 +156,19 @@ export default function Management({ active, setActive, user, onUser }) {
   );
   const payload = () => {
     const clean = (values) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+    const price = +form.price;
+    const originalPrice = +form.originalPrice;
+    const salePercent =
+      originalPrice > price && originalPrice > 0
+        ? Math.max(1, Math.min(100, Math.round(((originalPrice - price) / originalPrice) * 100)))
+        : 0;
     return {
       title: form.title.trim(),
       description: form.description.trim(),
-      price: +form.price,
-      originalPrice: +form.originalPrice,
+      materialCare: form.materialCare.trim(),
+      specifications: normalizeSpecifications(form.specifications),
+      price,
+      originalPrice,
       category: form.category,
       images: clean(form.images),
       colors: clean(form.colors),
@@ -145,7 +180,8 @@ export default function Management({ active, setActive, user, onUser }) {
       })),
       features: clean(form.features),
       isNew: form.isNew,
-      onSale: form.onSale,
+      onSale: salePercent > 0,
+      salePercent,
       rating: 0,
       reviews: 0,
     };
@@ -160,6 +196,7 @@ export default function Management({ active, setActive, user, onUser }) {
             sizes: p.sizes || [],
             variants: p.variants || [],
             features: p.features || [],
+            specifications: { ...blankSpecifications(), ...normalizeSpecifications(p.specifications) },
           }
         : blank,
     );
@@ -173,25 +210,46 @@ export default function Management({ active, setActive, user, onUser }) {
     if (saving) return;
     setSaving(true);
     try {
+      const body = payload();
+      if (!body.sizes.length) body.sizes = ["Standard"];
+      if (!body.colors.length) body.colors = ["Natural Teak"];
+      if (!body.images.length) {
+        setNotice("Add at least one product image URL.");
+        return;
+      }
+      if (!body.features.length) body.features = ["Handmade teakwood"];
+      if (!body.variants.length) {
+        body.variants = [
+          { color: body.colors[0], size: body.sizes[0], stock: 0 },
+        ];
+      }
       if (modal.type === "edit") {
-        await productApi(
-          "put",
-          `/updateproduct/${modal.item._id}`,
-          payload(),
-        );
+        await api("patch", `/products/${modal.item._id}`, body);
       } else {
-        await productApi("post", "/createproduct", payload());
+        await api("post", "/products", body);
       }
       setModal(null);
       await load();
       setActive("products");
+      flash(modal.type === "edit" ? "Product updated." : "Product added to the catalog.");
     } catch (e) {
-      alert(e.response?.data?.message || "Could not save product");
+      setNotice(e.response?.data?.message || "Could not save product");
     } finally {
       setSaving(false);
     }
   };
-  const remove = () => alert("Product delete is reserved for your manual implementation.");
+  const remove = (product) => setConfirmDelete(product);
+  const destroyProduct = async () => {
+    if (!confirmDelete) return;
+    try {
+      await api("delete", `/products/${confirmDelete._id}`);
+      setConfirmDelete(null);
+      await load();
+      flash("Product removed from the catalog.");
+    } catch (e) {
+      setNotice(e.response?.data?.message || "Could not delete product");
+    }
+  };
   const toggleOption = (field, value) => {
     setForm((current) => {
       const selected = current[field].includes(value);
@@ -279,11 +337,12 @@ export default function Management({ active, setActive, user, onUser }) {
   if (active === "dashboard")
     return (
       <>
+        {notice && <div className="admin-notice">{notice}</div>}
         <div className="admin-hero">
           <div>
-            <small>STORE PULSE</small>
+            <small>ARTIQULATE ATELIER</small>
             <h1>Welcome back, {user.name}.</h1>
-            <p>Here is what is happening across your store today.</p>
+            <p>Handmade teakwood, temples, and lighting — live from your workshop.</p>
           </div>
         </div>
         <div className="stat-grid">
@@ -309,11 +368,11 @@ export default function Management({ active, setActive, user, onUser }) {
             icon={Users}
             label="Customers"
             value={data.stats.customers}
-            note="Registered shoppers"
+            note="Registered collectors"
           />
         </div>
         <div className="dashboard-grid">
-          <Panel title="Recent orders" subtitle="Latest customer purchases">
+          <Panel title="Recent orders" subtitle="Latest atelier commissions">
             <OrderRows orders={data.orders} />
           </Panel>
           <Panel
@@ -373,6 +432,7 @@ export default function Management({ active, setActive, user, onUser }) {
             ))}
           </select>
         </div>
+        {notice && <div className="admin-notice">{notice}</div>}
         <ProductTable
           products={products}
           onView={(p) => openProduct("view", p)}
@@ -380,6 +440,26 @@ export default function Management({ active, setActive, user, onUser }) {
           onDelete={remove}
         />
         {renderModal()}
+        {confirmDelete && (
+          <div className="modal-bg">
+            <div className="admin-modal">
+              <button type="button" className="close" onClick={() => setConfirmDelete(null)}>
+                <X />
+              </button>
+              <small>Remove piece</small>
+              <h2>Delete {confirmDelete.title}?</h2>
+              <p>This removes the product from the catalog and storefront immediately.</p>
+              <div className="modal-actions" style={{ display: "flex", gap: 8, marginTop: 18 }}>
+                <button type="button" onClick={() => setConfirmDelete(null)}>
+                  Keep product
+                </button>
+                <button type="button" className="primary" onClick={destroyProduct}>
+                  Delete product
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Panel>
     );
   if (active === "add")
@@ -409,9 +489,11 @@ export default function Management({ active, setActive, user, onUser }) {
       <CategoriesManagement
         categories={data.categories}
         add={(v) => api("post", "/categories", v).then(load)}
+        update={(x, v) => api("patch", `/categories/${x._id}`, v).then(load)}
         toggle={(x) =>
           api("patch", `/categories/${x._id}`, { active: !x.active }).then(load)
         }
+        remove={(x) => api("delete", `/categories/${x._id}`).then(load)}
       />
     );
   if (active === "coupons")
@@ -427,7 +509,7 @@ export default function Management({ active, setActive, user, onUser }) {
   if (active === "sliders")
     return (
       <Resource
-        title="Slider / Banners"
+        title="Storefront banners"
         items={data.sliders}
         fields={["title", "subtitle", "image", "link"]}
         add={(v) => api("post", "/sliders", v).then(load)}
@@ -494,14 +576,18 @@ export default function Management({ active, setActive, user, onUser }) {
       return (
         <div className="modal-bg">
           <div className="admin-modal">
-            <button className="close" onClick={() => setModal(null)}>
+            <button type="button" className="close" onClick={() => setModal(null)}>
               <X />
             </button>
-            <h2>{form.title}</h2>
-            <img className="detail-image" src={form.images?.[0]} />
+            <div className="product-form-head">
+              <small>Catalog piece</small>
+              <h2>{form.title}</h2>
+              <p>{form.category}</p>
+            </div>
+            <img className="detail-image" src={form.images?.[0]} alt={form.title} />
             <p>{form.description}</p>
             <h3>
-              {money(form.price)} · {form.stock} in stock
+              {money(form.price)} · {stock(form)} in stock
             </h3>
           </div>
         </div>
@@ -509,12 +595,12 @@ export default function Management({ active, setActive, user, onUser }) {
     return (
       <div className={page ? "" : "modal-bg"}>
         <form
-          className={`admin-modal product-form product-form-premium tw:!rounded-3xl tw:!border tw:!border-slate-200 tw:!bg-white tw:!p-5 sm:tw:!p-7 tw:shadow-2xl tw:shadow-slate-900/10 ${page ? "page-form" : ""}`}
+          className={`admin-modal product-form product-form-premium ${page ? "page-form" : ""}`}
           onSubmit={saveProduct}
         >
           <button
             type="button"
-            className="close tw:flex tw:size-9 tw:items-center tw:justify-center tw:rounded-full tw:bg-slate-100 tw:text-slate-500 tw:transition tw:hover:bg-slate-200 tw:hover:text-slate-900"
+            className="close"
             onClick={() => {
               setModal(null);
               if (page) setActive("products");
@@ -522,21 +608,21 @@ export default function Management({ active, setActive, user, onUser }) {
           >
             <X />
           </button>
-          <div className="tw:border-b tw:border-slate-100 tw:pb-5">
-            <span className="tw:text-[10px] tw:font-extrabold tw:uppercase tw:tracking-[.18em] tw:text-emerald-700">Catalog management</span>
-            <h2 className="tw:mt-1 tw:text-2xl tw:font-extrabold tw:tracking-tight tw:text-slate-900">{modal.type === "edit" ? "Edit product" : "Add new product"}</h2>
-            <p className="tw:mt-1 tw:text-xs tw:text-slate-500">Add product information, selling options and inventory variants.</p>
+          <div className="product-form-head">
+            <small>Catalog management</small>
+            <h2>{modal.type === "edit" ? "Edit piece" : "Add a new piece"}</h2>
+            <p>Title, finish, scale, and workshop stock — saved to the live catalog.</p>
           </div>
-          <div className="form-grid tw:!gap-4">
+          {notice && <div className="admin-notice error">{notice}</div>}
+          <div className="form-grid">
             {[
               ["title", "Product name"],
               ["price", "Price", "number"],
               ["originalPrice", "Original price", "number"],
             ].map(([k, l, t]) => (
-              <label className="tw:text-slate-700" key={k}>
+              <label key={k}>
                 {l}
                 <input
-                  className="tw:transition tw:focus:!border-emerald-600 tw:focus:!ring-3 tw:focus:!ring-emerald-600/10"
                   required
                   type={t || "text"}
                   value={form[k]}
@@ -544,56 +630,127 @@ export default function Management({ active, setActive, user, onUser }) {
                 />
               </label>
             ))}
-            <label className="tw:text-slate-700">Category<select className="tw:!border-slate-200 tw:!p-2.5 tw:transition tw:focus:!border-emerald-600 tw:focus:!ring-3 tw:focus:!ring-emerald-600/10" required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}><option value="">Select category</option>{data.categories.filter((item) => item.active).map((item) => <option value={item.name} key={item._id}>{item.name}</option>)}</select></label>
+            <label>
+              Category
+              <select
+                required
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              >
+                <option value="">Select category</option>
+                {data.categories
+                  .filter((item) => item.active)
+                  .map((item) => (
+                    <option value={item.name} key={item._id}>
+                      {item.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <ImageFields values={form.images} onChange={(images) => setForm({ ...form, images })} />
-            <div className="wide option-picker product-form-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-slate-50/70">
-              <b>Sizes</b>
+            <div className="wide option-picker product-form-section">
+              <b>Scale</b>
               <div className="size-options">
-                {CLOTHING_SIZES.map((size) => (
+                {PIECE_SIZES.map((size) => (
                   <button type="button" key={size} className={form.sizes.includes(size) ? "selected" : ""} aria-pressed={form.sizes.includes(size)} onClick={() => toggleOption("sizes", size)}>
                     {form.sizes.includes(size) && <Check />}{size}
                   </button>
                 ))}
-                {form.sizes.filter((size) => !CLOTHING_SIZES.includes(size)).map((size) => (
+                {form.sizes.filter((size) => !PIECE_SIZES.includes(size)).map((size) => (
                   <button type="button" key={size} className="selected" aria-pressed="true" onClick={() => toggleOption("sizes", size)}><Check />{size}</button>
                 ))}
-                <button type="button" className="custom-option" onClick={() => setCustomSizeOpen((open) => !open)}><Plus />Custom Size</button>
+                <button type="button" className="custom-option" onClick={() => setCustomSizeOpen((open) => !open)}><Plus />Custom scale</button>
               </div>
-              {customSizeOpen && <div className="tw:flex tw:gap-2"><input autoFocus className="tw:min-w-0 tw:flex-1 tw:uppercase" placeholder="Enter custom size" value={customSize} onChange={(e) => setCustomSize(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomOption("sizes", customSize); } }}/><button type="button" className="tw:rounded-lg tw:bg-emerald-700 tw:px-4 tw:text-xs tw:font-bold tw:text-white" onClick={() => addCustomOption("sizes", customSize)}>Add</button></div>}
+              {customSizeOpen && (
+                <div className="image-row">
+                  <input autoFocus placeholder="Enter custom scale" value={customSize} onChange={(e) => setCustomSize(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomOption("sizes", customSize); } }} />
+                  <button type="button" className="primary" onClick={() => addCustomOption("sizes", customSize)}>Add</button>
+                </div>
+              )}
             </div>
-            <div className="wide option-picker product-form-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-slate-50/70">
-              <b>Colors</b>
+            <div className="wide option-picker product-form-section">
+              <b>Wood finish</b>
               <div className="color-options">
-                {CLOTHING_COLORS.map(([name, hex]) => (
+                {WOOD_FINISHES.map(([name, hex]) => (
                   <button type="button" key={name} className={form.colors.includes(name) ? "selected" : ""} aria-pressed={form.colors.includes(name)} onClick={() => toggleOption("colors", name)}>
                     <i style={{ backgroundColor: hex }}>{form.colors.includes(name) && <Check />}</i>{name}
                   </button>
                 ))}
-                {form.colors.filter((color) => !CLOTHING_COLORS.some(([name]) => name === color)).map((color) => (
+                {form.colors.filter((color) => !WOOD_FINISHES.some(([name]) => name === color)).map((color) => (
                   <button type="button" key={color} className="selected" aria-pressed="true" onClick={() => toggleOption("colors", color)}><i><Check /></i>{color}</button>
                 ))}
-                <button type="button" className="custom-option" onClick={() => setCustomColorOpen((open) => !open)}><Plus />Custom Color</button>
+                <button type="button" className="custom-option" onClick={() => setCustomColorOpen((open) => !open)}><Plus />Custom finish</button>
               </div>
-              {customColorOpen && <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-2"><input aria-label="Choose custom color" className="tw:!size-10 tw:!p-1" type="color" value={customColor.hex} onChange={(e) => setCustomColor({ ...customColor, hex: e.target.value })}/><input autoFocus className="tw:min-w-40 tw:flex-1" placeholder="Color name" value={customColor.name} onChange={(e) => setCustomColor({ ...customColor, name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomOption("colors", customColor.name); } }}/><button type="button" className="tw:rounded-lg tw:bg-emerald-700 tw:px-4 tw:py-2.5 tw:text-xs tw:font-bold tw:text-white" onClick={() => addCustomOption("colors", customColor.name)}>Add color</button></div>}
+              {customColorOpen && (
+                <div className="image-row">
+                  <input aria-label="Choose custom finish" type="color" value={customColor.hex} onChange={(e) => setCustomColor({ ...customColor, hex: e.target.value })} />
+                  <input autoFocus placeholder="Finish name" value={customColor.name} onChange={(e) => setCustomColor({ ...customColor, name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomOption("colors", customColor.name); } }} />
+                  <button type="button" className="primary" onClick={() => addCustomOption("colors", customColor.name)}>Add finish</button>
+                </div>
+              )}
             </div>
-            <label className="wide tw:text-slate-700">
+            <label className="wide">
               Description
-              <textarea className="tw:transition tw:focus:!border-emerald-600 tw:focus:!ring-3 tw:focus:!ring-emerald-600/10"
+              <textarea
                 required
+                placeholder="Shown in the product Description dropdown"
                 value={form.description}
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
               />
             </label>
+            <label className="wide">
+              Material care
+              <textarea
+                placeholder="Shown in the product Material Care dropdown"
+                value={form.materialCare}
+                onChange={(e) =>
+                  setForm({ ...form, materialCare: e.target.value })
+                }
+              />
+            </label>
+            <div className="wide product-form-section spec-fields">
+              <b>Specifications</b>
+              <small>These rows appear in the storefront Specifications table.</small>
+              <div className="spec-grid">
+                {SPECIFICATION_FIELDS.map((field) => (
+                  <label key={field.key}>
+                    {field.label}
+                    <input
+                      placeholder={field.placeholder}
+                      value={form.specifications?.[field.key] || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          specifications: {
+                            ...blankSpecifications(),
+                            ...form.specifications,
+                            [field.key]: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
             <FeatureFields values={form.features} onChange={(features) => setForm({ ...form, features })} />
-            <div className="wide variant-fields product-form-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-white tw:shadow-sm">
-              <div className="variant-heading"><span><b>Variants</b><small className="tw:mt-0.5 tw:block tw:text-[10px] tw:font-normal tw:text-slate-500">Create size and color inventory combinations.</small></span><button type="button" disabled={!form.sizes.length || !form.colors.length} onClick={generateVariants}><Sparkles />Generate Variants</button></div>
-              {form.variants.length > 0 && <div className="variant-labels"><span>Size</span><span>Color</span><span>Stock</span><span /></div>}
+            <div className="wide variant-fields product-form-section">
+              <div className="variant-heading">
+                <span>
+                  <b>Workshop stock</b>
+                  <small>Create scale and finish combinations for inventory.</small>
+                </span>
+                <button type="button" disabled={!form.sizes.length || !form.colors.length} onClick={generateVariants}>
+                  <Sparkles />Generate variants
+                </button>
+              </div>
+              {form.variants.length > 0 && <div className="variant-labels"><span>Scale</span><span>Finish</span><span>Stock</span><span /></div>}
               {form.variants.map((variant, index) => (
-                <div className="variant-row" key={`${variant.size}-${variant.color}`}>
-                  <select required value={variant.size} onChange={(e) => updateVariant(index, "size", e.target.value)}><option value="">Size</option>{form.sizes.map((size) => <option key={size}>{size}</option>)}</select>
-                  <select required value={variant.color} onChange={(e) => updateVariant(index, "color", e.target.value)}><option value="">Color</option>{form.colors.map((color) => <option key={color}>{color}</option>)}</select>
+                <div className="variant-row" key={`${variant.size}-${variant.color}-${index}`}>
+                  <select required value={variant.size} onChange={(e) => updateVariant(index, "size", e.target.value)}><option value="">Scale</option>{form.sizes.map((size) => <option key={size}>{size}</option>)}</select>
+                  <select required value={variant.color} onChange={(e) => updateVariant(index, "color", e.target.value)}><option value="">Finish</option>{form.colors.map((color) => <option key={color}>{color}</option>)}</select>
                   <input required type="number" min="0" placeholder="Stock" value={variant.stock} onChange={(e) => updateVariant(index, "stock", e.target.value)}/>
                   <button type="button" aria-label={`Remove ${variant.size} ${variant.color} variant`} onClick={() => setForm({ ...form, variants: form.variants.filter((_, i) => i !== index) })}>×</button>
                 </div>
@@ -601,63 +758,53 @@ export default function Management({ active, setActive, user, onUser }) {
             </div>
             <ProductStatusSection
               isNew={form.isNew}
-              onSale={form.onSale}
-              discount={form.originalPrice > form.price && form.originalPrice > 0 ? Math.round((1 - form.price / form.originalPrice) * 100) : 0}
+              price={form.price}
+              originalPrice={form.originalPrice}
               onChange={(field, value) => setForm({ ...form, [field]: value })}
             />
           </div>
-          <button disabled={saving} className="primary save tw:!rounded-xl tw:!bg-slate-900 tw:!py-3.5 tw:!text-white tw:shadow-lg tw:shadow-slate-900/15 tw:transition tw:hover:!-translate-y-0.5 tw:hover:!bg-emerald-800 tw:active:!translate-y-0 tw:disabled:!cursor-not-allowed tw:disabled:!opacity-60">{saving ? "Saving product…" : modal.type === "edit" ? "Update product" : "Save product"}</button>
+          <button disabled={saving} className="primary save">{saving ? "Saving piece…" : modal.type === "edit" ? "Update piece" : "Save piece"}</button>
         </form>
       </div>
     );
   }
 }
-function ProductStatusSection({ isNew, onSale, discount, onChange }) {
+function ProductStatusSection({ isNew, price, originalPrice, onChange }) {
+  const sell = Number(price) || 0;
+  const original = Number(originalPrice) || 0;
+  const salePercent =
+    original > sell && original > 0
+      ? Math.max(1, Math.min(100, Math.round(((original - sell) / original) * 100)))
+      : 0;
   return (
-    <section className="wide product-status-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-slate-50/70">
-      <div className="tw:mb-3">
-        <b className="tw:block tw:text-xs tw:text-slate-800">Product status</b>
-        <small className="tw:text-[10px] tw:text-slate-500">Control how this product is highlighted across your storefront.</small>
-      </div>
-      <div className="tw:flex tw:w-full tw:items-stretch tw:gap-3">
-        <StatusToggle
-          checked={onSale}
-          icon={BadgePercent}
-          label="On sale"
-          description="Display promotional pricing"
-          accent="amber"
-          badge={discount > 0 ? `${discount}% OFF` : null}
-          onChange={(value) => onChange("onSale", value)}
-        />
+    <section className="wide product-form-section">
+      <b>Storefront flags</b>
+      <small>Sale percent is calculated automatically when original price is higher than selling price.</small>
+      <div className="status-pair">
+        <div className={`status-card ${salePercent > 0 ? "on" : ""}`}>
+          <i><BadgePercent /></i>
+          <b>{salePercent > 0 ? `On sale · ${salePercent}% off` : "On sale"}</b>
+          <span className="status-pill">{salePercent > 0 ? "Auto" : "Off"}</span>
+        </div>
         <StatusToggle
           checked={isNew}
           icon={Sparkles}
-          label="New product"
-          description="Highlight as a new arrival"
-          accent="emerald"
-          badge={isNew ? "NEW" : null}
+          label="New arrival"
           onChange={(value) => onChange("isNew", value)}
         />
       </div>
     </section>
   );
 }
-function StatusToggle({ checked, icon: Icon, label, accent, onChange }) {
-  const activeCard = accent === "amber"
-    ? "tw:border-amber-300 tw:bg-amber-50/70 tw:shadow-amber-900/5"
-    : "tw:border-emerald-300 tw:bg-emerald-50/70 tw:shadow-emerald-900/5";
-  const iconStyle = accent === "amber"
-    ? "tw:bg-amber-100 tw:text-amber-700"
-    : "tw:bg-emerald-100 tw:text-emerald-700";
+function StatusToggle({ checked, icon: Icon, label, onChange }) {
   return (
-    <div className={`status-card-control tw:group tw:flex tw:min-w-0 tw:flex-1 tw:items-center tw:gap-3 tw:rounded-xl tw:border tw:p-3.5 tw:shadow-sm tw:transition-all tw:duration-200 tw:hover:-translate-y-0.5 tw:hover:shadow-md ${checked ? activeCard : "tw:border-slate-200 tw:bg-white"}`}>
-      <span className={`tw:flex tw:size-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-xl tw:transition ${checked ? iconStyle : "tw:bg-slate-100 tw:text-slate-500"}`}><Icon className="tw:size-5" /></span>
-      <span className="tw:min-w-0 tw:flex-1"><span className="tw:flex tw:items-center tw:gap-2"><b className="tw:text-xs tw:text-slate-800">{label}</b></span></span>
+    <div className={`status-card ${checked ? "on" : ""}`}>
+      <i><Icon /></i>
+      <b>{label}</b>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
-        aria-label={`${label}: ${checked ? "enabled" : "disabled"}`}
         className={`status-switch ${checked ? "is-checked" : ""}`}
         onClick={() => onChange(!checked)}
       >
@@ -669,22 +816,75 @@ function StatusToggle({ checked, icon: Icon, label, accent, onChange }) {
 }
 function ImageFields({ values, onChange }) {
   return (
-    <section className="wide product-form-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-slate-50/70">
-      <div className="tw:mb-3 tw:flex tw:items-center tw:justify-between tw:gap-3"><span><b className="tw:block tw:text-xs tw:text-slate-700">Product images</b><small className="tw:text-[10px] tw:text-slate-500">Add clear image URLs. The first image is used as the cover.</small></span><ImagePlus className="tw:size-5 tw:text-emerald-700" /></div>
-      <div className="tw:grid tw:gap-2">
-        {values.map((value, index) => <div className="tw:flex tw:items-center tw:gap-2" key={index}><span className="tw:flex tw:size-9 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-lg tw:bg-white tw:text-[10px] tw:font-extrabold tw:text-slate-400 tw:ring-1 tw:ring-slate-200">{index + 1}</span><input aria-label={`Product image URL ${index + 1}`} className="tw:min-w-0 tw:flex-1 tw:!bg-white tw:transition tw:focus:!border-emerald-600 tw:focus:!ring-3 tw:focus:!ring-emerald-600/10" required type="url" placeholder="https://example.com/product-image.jpg" value={value} onChange={(e) => onChange(values.map((item, itemIndex) => itemIndex === index ? e.target.value : item))}/><button aria-label={`Remove image ${index + 1}`} className="tw:flex tw:size-9 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-lg tw:border tw:border-red-200 tw:bg-red-50 tw:text-red-600 tw:transition tw:hover:bg-red-100" type="button" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="tw:size-4" /></button></div>)}
+    <section className="wide product-form-section">
+      <div className="variant-heading">
+        <span>
+          <b>Product images</b>
+          <small>The first URL becomes the catalog cover.</small>
+        </span>
+        <ImagePlus />
       </div>
-      <button className="tw:mt-3 tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-lg tw:border tw:border-dashed tw:border-emerald-600/40 tw:bg-white tw:px-3 tw:py-2 tw:text-[11px] tw:font-bold tw:text-emerald-700 tw:transition tw:hover:bg-emerald-50" type="button" onClick={() => onChange([...values, ""])}><Plus className="tw:size-3.5" />Add Product Image</button>
-      {!!values.filter(Boolean).length && <div className="tw:mt-4 tw:flex tw:flex-wrap tw:gap-3">{values.map((image, index) => image && <div className="tw:group tw:relative tw:size-20 tw:overflow-hidden tw:rounded-xl tw:border tw:border-slate-200 tw:bg-white" key={`${image}-${index}`}><img className="tw:size-full tw:object-cover" src={image} alt={`Product preview ${index + 1}`}/><button aria-label={`Remove preview ${index + 1}`} className="tw:absolute tw:right-1 tw:top-1 tw:flex tw:size-6 tw:items-center tw:justify-center tw:rounded-full tw:bg-slate-950/75 tw:text-white tw:opacity-0 tw:transition tw:group-hover:opacity-100 tw:focus:opacity-100" type="button" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}><X className="tw:size-3" /></button></div>)}</div>}
+      <div className="field-stack">
+        {values.map((value, index) => (
+          <div className="image-row" key={index}>
+            <span className="image-index">{index + 1}</span>
+            <input
+              required
+              type="text"
+              placeholder="/banner/banner1.webp or https://…"
+              value={value}
+              onChange={(e) =>
+                onChange(values.map((item, itemIndex) => (itemIndex === index ? e.target.value : item)))
+              }
+            />
+            <button type="button" className="danger-btn" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}>
+              <Trash2 />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="ghost-btn" onClick={() => onChange([...values, ""])}>
+        <Plus /> Add image
+      </button>
+      {!!values.filter(Boolean).length && (
+        <div className="image-previews">
+          {values.map((image, index) =>
+            image ? (
+              <figure key={`${image}-${index}`}>
+                <img src={image} alt="" />
+              </figure>
+            ) : null,
+          )}
+        </div>
+      )}
     </section>
   );
 }
 function FeatureFields({ values, onChange }) {
   return (
-    <section className="wide product-form-section tw:rounded-2xl tw:border tw:border-slate-200 tw:bg-slate-50/70">
-      <div className="tw:mb-3"><b className="tw:block tw:text-xs tw:text-slate-700">Features</b><small className="tw:text-[10px] tw:text-slate-500">Add short selling points customers can scan quickly.</small></div>
-      <div className="tw:grid tw:gap-2">{values.map((value, index) => <div className="tw:flex tw:items-center tw:gap-2" key={index}><input aria-label={`Product feature ${index + 1}`} className="tw:min-w-0 tw:flex-1 tw:!bg-white tw:transition tw:focus:!border-emerald-600 tw:focus:!ring-3 tw:focus:!ring-emerald-600/10" required placeholder="e.g. Premium breathable cotton" value={value} onChange={(e) => onChange(values.map((item, itemIndex) => itemIndex === index ? e.target.value : item))}/><button aria-label={`Remove feature ${index + 1}`} className="tw:flex tw:size-9 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-lg tw:border tw:border-red-200 tw:bg-red-50 tw:text-red-600 tw:transition tw:hover:bg-red-100" type="button" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}><X className="tw:size-4" /></button></div>)}</div>
-      <button className="tw:mt-3 tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-lg tw:border tw:border-dashed tw:border-emerald-600/40 tw:bg-white tw:px-3 tw:py-2 tw:text-[11px] tw:font-bold tw:text-emerald-700 tw:transition tw:hover:bg-emerald-50" type="button" onClick={() => onChange([...values, ""])}><Plus className="tw:size-3.5" />Add Feature</button>
+    <section className="wide product-form-section">
+      <b>Craft notes</b>
+      <small>Short lines customers can scan — teak grain, joinery, finish.</small>
+      <div className="field-stack">
+        {values.map((value, index) => (
+          <div className="feature-row" key={index}>
+            <input
+              required
+              placeholder="e.g. Aged Indian teakwood"
+              value={value}
+              onChange={(e) =>
+                onChange(values.map((item, itemIndex) => (itemIndex === index ? e.target.value : item)))
+              }
+            />
+            <button type="button" className="danger-btn" onClick={() => onChange(values.filter((_, itemIndex) => itemIndex !== index))}>
+              <X />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="ghost-btn" onClick={() => onChange([...values, ""])}>
+        <Plus /> Add note
+      </button>
     </section>
   );
 }
@@ -860,7 +1060,14 @@ function Settings({ user, save }) {
   const [name, setName] = useState(user.name),
     [message, setMessage] = useState("");
   return (
-    <Panel title="Settings" subtitle="Manage your admin profile">
+    <Panel title="Atelier settings" subtitle="Your administrator profile and house details">
+      <div className="settings-store">
+        <b>{SITE.name}</b>
+        <span>{SITE.tagline}</span>
+        <span>{SITE.address}</span>
+        <span>{SITE.emails.primary}</span>
+        <span>{SITE.phone}</span>
+      </div>
       <form
         className="settings-form"
         onSubmit={async (e) => {
@@ -870,7 +1077,7 @@ function Settings({ user, save }) {
         }}
       >
         <label>
-          Name
+          Display name
           <input value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label>

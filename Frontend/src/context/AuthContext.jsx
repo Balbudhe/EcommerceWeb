@@ -104,6 +104,9 @@ export function AuthProvider({ children }) {
         email,
         password,
       });
+      if (data?.token && data?.user) {
+        return applyAuth(data);
+      }
       return data;
     } catch (err) {
       throw new Error(getAxiosErrorMessage(err, "Registration failed"));

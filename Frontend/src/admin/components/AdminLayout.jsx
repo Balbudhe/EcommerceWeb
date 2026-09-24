@@ -13,8 +13,10 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import BrandMark from "../../components/ui/BrandMark";
+
 const groups = [
-  ["MAIN", [["Dashboard", "dashboard", LayoutDashboard]]],
+  ["ATELIER", [["Dashboard", "dashboard", LayoutDashboard]]],
   [
     "CATALOG",
     [
@@ -25,14 +27,14 @@ const groups = [
   ],
   ["ORDERS", [["Orders", "orders", ShoppingBag]]],
   [
-    "MARKETING",
+    "GALLERY",
     [
-      ["Slider / Banners", "sliders", Image],
+      ["Banners", "sliders", Image],
       ["Coupons", "coupons", TicketPercent],
     ],
   ],
   [
-    "USERS & REPORTS",
+    "HOUSE",
     [
       ["Customers", "users", Users],
       ["Reports", "reports", BarChart3],
@@ -40,6 +42,7 @@ const groups = [
     ],
   ],
 ];
+
 export default function AdminLayout({
   active,
   setActive,
@@ -48,6 +51,7 @@ export default function AdminLayout({
   children,
 }) {
   const [open, setOpen] = useState(false);
+  const page = groups.flatMap((group) => group[1]).find((item) => item[1] === active);
   return (
     <div className="admin-shell">
       <div
@@ -56,11 +60,12 @@ export default function AdminLayout({
       />
       <aside className={open ? "open" : ""}>
         <header>
-          <span>V</span>
-          <b>
-            VORA <em>Control</em>
-          </b>
-          <button onClick={() => setOpen(false)}>
+          <BrandMark className="admin-logo" wordmark="" />
+          <div className="admin-brand-copy">
+            <b>Artiqulate</b>
+            <small>Atelier</small>
+          </div>
+          <button type="button" onClick={() => setOpen(false)}>
             <X />
           </button>
         </header>
@@ -70,6 +75,7 @@ export default function AdminLayout({
               <small>{label}</small>
               {items.map(([name, id, Icon]) => (
                 <button
+                  type="button"
                   className={active === id ? "active" : ""}
                   onClick={() => {
                     setActive(id);
@@ -84,24 +90,22 @@ export default function AdminLayout({
             </section>
           ))}
         </nav>
-        <button className="admin-logout" onClick={logout}>
+        <button type="button" className="admin-logout" onClick={logout}>
           <LogOut />
-          Logout
+          Sign out
         </button>
       </aside>
       <main>
         <div className="admin-topbar">
-          <button className="admin-menu" onClick={() => setOpen(true)}>
+          <button type="button" className="admin-menu" onClick={() => setOpen(true)}>
             <Menu />
           </button>
           <div>
-            <b>
-              {groups.flatMap((g) => g[1]).find((x) => x[1] === active)?.[0]}
-            </b>
-            <small>Store administration</small>
+            <b>{page?.[0]}</b>
+            <small>Artiqulate Lifestyle · workshop control</small>
           </div>
-          <a href="/" target="_blank">
-            View storefront ↗
+          <a href="/" target="_blank" rel="noreferrer">
+            View storefront
           </a>
           <div className="admin-profile">
             <span>{user.name?.[0]}</span>
