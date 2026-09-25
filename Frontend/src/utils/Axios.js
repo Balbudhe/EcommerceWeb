@@ -2,8 +2,14 @@ import axios from "axios";
 import { getAuthToken } from "../services/api.js";
 import { loadAuthSession } from "./authSession.js";
 
+function resolveApiBase() {
+  const raw = String(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim();
+  const cleaned = raw.replace(/\/+$/, "");
+  return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
+}
+
 const axiosInstance = axios.create({
-  baseURL: " https://ecommerceweb-7p1x.onrender.com/api",
+  baseURL: resolveApiBase(),
   headers: { "Content-Type": "application/json" },
 });
 

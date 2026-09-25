@@ -29,7 +29,13 @@
  */
 import { loadAuthSession } from "../utils/authSession";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+function resolveApiBase() {
+  const raw = String(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim();
+  const cleaned = raw.replace(/\/+$/, "");
+  return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
+}
+
+const API_BASE = resolveApiBase();
 
 let authToken = loadAuthSession()?.token || null;
 
