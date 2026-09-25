@@ -3,7 +3,7 @@ import { getAuthToken } from "../services/api.js";
 import { loadAuthSession } from "./authSession.js";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: " https://ecommerceweb-7p1x.onrender.com/api",
   headers: { "Content-Type": "application/json" },
 });
 
