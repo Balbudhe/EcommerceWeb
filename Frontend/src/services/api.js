@@ -2,7 +2,7 @@
  * API layer for your Node.js + MongoDB backend.
  *
  * Set in Frontend/.env:
- *   VITE_API_URL=http://localhost:5000/api
+ *   VITE_API_URL=https://ecommerce-web-sigma-six.vercel.app/api
  *
  * Expected routes (adjust names in this file to match your API):
  *   POST   /auth/register
@@ -30,7 +30,10 @@
 import { loadAuthSession } from "../utils/authSession";
 
 function resolveApiBase() {
-  const raw = String(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim();
+  const fallback = import.meta.env.PROD
+    ? "https://ecommerce-web-sigma-six.vercel.app/api"
+    : "http://localhost:5000/api";
+  const raw = String(import.meta.env.VITE_API_URL || fallback).trim();
   const cleaned = raw.replace(/\/+$/, "");
   return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
 }

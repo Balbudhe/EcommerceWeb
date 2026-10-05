@@ -2,6 +2,7 @@ import User from "../Models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import { resolveFrontendOrigin } from "../Config/frontendUrl.js";
 
 const signUserToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -90,10 +91,7 @@ export const sendVerificationEmail = async (req, res) => {
       expiresIn: "10m",
     });
 
-    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(
-      /\/$/,
-      ""
-    );
+    const frontendUrl = resolveFrontendOrigin();
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     // Gmail App Password must have NO spaces

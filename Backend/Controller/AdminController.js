@@ -7,6 +7,7 @@ import Order from "../Models/Order.js";
 import Category from "../Models/Category.js";
 import Coupon from "../Models/Coupon.js";
 import Slider from "../Models/Slider.js";
+import { resolveFrontendOrigin } from "../Config/frontendUrl.js";
 import {
   cancelShiprocketForOrder,
   shipOrderWithShiprocket,
@@ -24,8 +25,7 @@ const signAdmin = (u) =>
   jwt.sign({ id: u._id, role: u.role }, process.env.JWT_SECRET, {
     expiresIn: "1d",
   });
-const frontendOrigin = () =>
-  (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+const frontendOrigin = () => resolveFrontendOrigin();
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body,

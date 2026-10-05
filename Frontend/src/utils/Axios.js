@@ -3,7 +3,10 @@ import { getAuthToken } from "../services/api.js";
 import { loadAuthSession } from "./authSession.js";
 
 function resolveApiBase() {
-  const raw = String(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim();
+  const fallback = import.meta.env.PROD
+    ? "https://ecommerce-web-sigma-six.vercel.app/api"
+    : "http://localhost:5000/api";
+  const raw = String(import.meta.env.VITE_API_URL || fallback).trim();
   const cleaned = raw.replace(/\/+$/, "");
   return cleaned.endsWith("/api") ? cleaned : `${cleaned}/api`;
 }

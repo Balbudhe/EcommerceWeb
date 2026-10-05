@@ -9,6 +9,7 @@ import adminRouter from "./UseRouter/adminRouter.js";
 import categoryRouter from "./UseRouter/categoryRouter.js";
 import orderRouter from "./UseRouter/orderRouter.js";
 import wishlistRouter from "./UseRouter/wishlistRouter.js";
+import { productionFrontendOrigin, resolveFrontendOrigin } from "./Config/frontendUrl.js";
 dotenv.config();
 const app=express();
 connectDB();
@@ -16,7 +17,8 @@ connectDB();
 const normalizeOrigin = (value = "") => String(value).trim().replace(/\/+$/, "");
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  resolveFrontendOrigin(),
+  productionFrontendOrigin,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ]
